@@ -1,0 +1,5 @@
+build/
+.vscode/
+outfile.png
+graphviz_example.dot
+generate.sh
