@@ -26,10 +26,9 @@ namespace van_kampmen
         Diagramm(Graph &graph);
 
         std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> getWord();
-
         void bindWord(const std::vector<GroupElement> &word);
-
         void shuffleTerminal();
+        std::shared_ptr<Node> getTerminal() const noexcept;
 
     private:
         std::shared_ptr<Node> terminal_ = nullptr;

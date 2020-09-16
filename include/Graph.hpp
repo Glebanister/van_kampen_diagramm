@@ -61,12 +61,15 @@ namespace van_kampmen
         std::weak_ptr<Node> addTransitionToNewNode(const GroupElement &label);
 
         // Highlight node on diagramm
-        void highlightNode() noexcept;
+        void highlightNode(bool) noexcept;
 
         reverse_iterator begin() noexcept;
         reverse_iterator end() noexcept;
 
         std::size_t getId() const noexcept;
+
+        void setLabel(const std::string &);
+        void setComment(const std::string &);
 
     private:
         friend class Graph;
@@ -79,6 +82,8 @@ namespace van_kampmen
         bool isHighlighted_ = false;
         std::size_t id_;
         Graph &graph_;
+        std::string label_ = "";
+        std::string comment_ = "";
     };
 
     class Graph

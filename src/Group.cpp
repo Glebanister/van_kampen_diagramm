@@ -63,7 +63,14 @@ std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> Diagramm::getWord()
 void Diagramm::shuffleTerminal()
 {
     auto nextBigWord = getWord();
+    terminal_->highlightNode(false);
     terminal_ = nextBigWord[rand() % nextBigWord.size()].first.lock();
+    terminal_->highlightNode(true);
+}
+
+std::shared_ptr<Node> Diagramm::getTerminal() const noexcept
+{
+    return terminal_;
 }
 
 void Diagramm::bindWord(const std::vector<GroupElement> &word)
@@ -74,6 +81,21 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
 
     auto startNode = curNode;
     auto bigWord = getWord();
+
+    std::size_t commonPrefix = 0;
+    for (; commonPrefix < std::min(bigWord.size(), word.size()); ++commonPrefix)
+    {
+        if (bigWord[commonPrefix].second.name != word[commonPrefix].name ||
+            bigWord[commonPrefix].second.reversed != word[commonPrefix].reversed)
+        {
+            break;
+        }
+    }
+
+    if (commonPrefix + 1 == bigWord.size())
+    {
+        return;
+    }
 
     for (; wordLetterId < word.size() && wordLetterId < bigWord.size(); ++wordLetterId)
     {
@@ -112,18 +134,19 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
     {
         bigWord.emplace_back(terminal_, word.back());
     }
-    curNode->addTransition(bigWord[bigWord.size() - longestCommonSuffixLen - 1].first,
+    int id = bigWord.size() - longestCommonSuffixLen - 1;
+    id = std::max(0, id);
+    curNode->addTransition(bigWord[id].first,
                            word[wordLetterId]);
 
-    int id = bigWord.size() - longestCommonSuffixLen - 1;
     // if (id > 0)
     // {
-        bigWord[id].first.lock()->addTransition(curNode, word[wordLetterId].inverse());
-        auto lastBigWordLetter = bigWord[bigWord.size() - longestCommonSuffixLen - 1].first.lock();
-        if (lastBigWordLetter == startNode)
-        {
-            lastBigWordLetter->swapLastAdditions();
-        }
+    bigWord[id].first.lock()->addTransition(curNode, word[wordLetterId].inverse());
+    auto lastBigWordLetter = bigWord[id].first.lock();
+    if (lastBigWordLetter == startNode)
+    {
+        lastBigWordLetter->swapLastAdditions();
+    }
     // }
     shuffleTerminal();
 }

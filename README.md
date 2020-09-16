@@ -1,6 +1,6 @@
 # Van Kampen diagramm generator
 
-Tool for generating Van Kampen diagramms
+Tool for generating Van Kampen diagramms. Does not work correctly at this moment.
 
 ## Usage
 
@@ -18,15 +18,11 @@ mkdir build && cd build
 make
 ```
 
-### To generate .ps file
+### To generate .dot file
 
 ```bash
-./build/van_kampen_diagramm -s SEED > diagramm.dot
+./build/van_kampen_diagramm "<a, b | aba*b*>" > diagramm.dot
 ```
-
-Where
-
-* [optional] SEED is random seed for generator. Seed will be will be randomly selected if not specified.
 
 ### To generate [format] file
 
@@ -39,8 +35,10 @@ Supported formats list can be found at [graphviz.org](https://graphviz.org/doc/i
 ## Example
 
 ```bash
-./build/van_kampen_diagramm "<ab|aba-b->" -K dot > diagramm.dot
-dot -Tpng diagramm.dot -o outfile.png
+./build/van_kampen_diagramm "<a, b | aba*b*, ab*a*b>" > build/diagramm.dot
+dot -Tpng build/diagramm.dot -o outfile.png
 ```
 
-Will generate Van Kampen diagramm for alphabet `ab` and following words.
+Will generate Van Kampen diagramm for alphabet `ab` and following word.
+
+![example](media/outfile.png)

@@ -1,28 +1,41 @@
+#include <random>
+#include <sstream>
+
 #include "Graph.hpp"
 #include "Group.hpp"
 #include "GroupRepresentationParser.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
-    // van_kampmen::Graph graph;
-    // van_kampmen::Diagramm diagramm(graph);
-    // diagramm.bindWord(
-    //     {
-    //         {'a', true},
-    //         {'b', true},
-    //         {'b', false},
-    //         {'a', false},
-    //     });
-    // graph.printSelf(std::cout);
+    if (argc < 2)
+    {
+        throw std::invalid_argument("specify group representation");
+    }
+    auto words = van_kampmen::GroupRepresentationParser::parse(argv[1]);
+    van_kampmen::Graph graph;
+    van_kampmen::Diagramm diagramm(graph);
 
-    auto words = van_kampmen::GroupRepresentationParser::parse("<a, b, c | ab*c, bca>");
+    std::mt19937 random;
+    auto randint = [&](int begin, int end) {
+        return random() % (end - begin + 1) + begin;
+    };
 
     for (auto word : words)
     {
-        for (auto ch : word)
+        diagramm.bindWord(word);
+        for (int it = randint(0, word.size()); it; --it)
         {
-            std::cout << ch.name << ' ' << ch.reversed << std::endl;
+            std::rotate(word.begin(), word.begin() + 1, word.end());
+            diagramm.bindWord(word);
         }
-        std::cout << std::endl;
     }
+
+    std::stringstream word;
+    for (auto letter : diagramm.getWord())
+    {
+        word << letter.second.name << (letter.second.reversed ? "*" : "");
+    }
+    diagramm.getTerminal()->setLabel("S");
+    diagramm.getTerminal()->setComment(word.str());
+    graph.printSelf(std::cout);
 }

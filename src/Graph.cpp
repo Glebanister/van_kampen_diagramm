@@ -116,9 +116,9 @@ std::weak_ptr<Node> Node::addTransitionToNewNode(const GroupElement &label)
     return ownedTransitions_.emplace_back(std::move(newNode), label).first;
 }
 
-void Node::highlightNode() noexcept
+void Node::highlightNode(bool value) noexcept
 {
-    isHighlighted_ = true;
+    isHighlighted_ = value;
 }
 
 Node::reverse_iterator Node::begin() noexcept
@@ -136,11 +136,23 @@ std::size_t Node::getId() const noexcept
     return id_;
 }
 
+void Node::setLabel(const std::string &label)
+{
+    label_ = label;
+}
+
+void Node::setComment(const std::string &comment)
+{
+    comment_ = comment;
+}
+
 // Print this node and all outgoing transitions
 void Node::printSelfAndTransitions(std::ostream &os, std::unordered_map<std::size_t, bool> &printed)
 {
     std::string shape = isHighlighted_ ? "circle" : "point";
-    print(os, id_, "[shape=", shape, "];\n");
+    std::string label = !label_.empty() ? ",label=" + label_ : "";
+    std::string comment = !comment_.empty() ? ",xlabel=\"" + comment_ + "\"" : "";
+    print(os, id_, "[shape=", shape, label, comment, "];\n");
     printed[id_] = true;
     auto printTransition = [&](std::size_t &id, const GroupElement &elem) {
         if (!elem.reversed)
