@@ -63,6 +63,10 @@ std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> Diagramm::getWord()
 void Diagramm::shuffleTerminal()
 {
     auto nextBigWord = getWord();
+    if (nextBigWord.size() == 0)
+    {
+        return;
+    }
     terminal_->highlightNode(false);
     terminal_ = nextBigWord[rand() % nextBigWord.size()].first.lock();
     terminal_->highlightNode(true);
@@ -75,79 +79,92 @@ std::shared_ptr<Node> Diagramm::getTerminal() const noexcept
 
 void Diagramm::bindWord(const std::vector<GroupElement> &word)
 {
-    std::size_t wordLetterId = 0;
-    auto curNode = terminal_;
-    std::size_t notSplitterIters = 0;
-
-    auto startNode = curNode;
-    auto bigWord = getWord();
-
-    std::size_t commonPrefix = 0;
-    for (; commonPrefix < std::min(bigWord.size(), word.size()); ++commonPrefix)
+    auto circleWord = getWord();
+    if (circleWord.size() == 0)
     {
-        if (bigWord[commonPrefix].second.name != word[commonPrefix].name ||
-            bigWord[commonPrefix].second.reversed != word[commonPrefix].reversed)
+        auto curNode = std::weak_ptr(terminal_);
+        for (std::size_t i = 0; i < word.size() - 1; ++i)
         {
-            break;
+            auto prevNode = curNode;
+            curNode = prevNode.lock()->addTransitionToNewNode(word[i]);
+            curNode.lock()->addTransition(prevNode, word[i].inverse());
         }
-    }
-
-    if (commonPrefix + 1 == bigWord.size())
-    {
+        curNode.lock()->addTransition(terminal_, word.back());
+        terminal_->addTransition(curNode.lock(), word.back().inverse());
+        terminal_->swapLastAdditions();
         return;
     }
 
-    for (; wordLetterId < word.size() && wordLetterId < bigWord.size(); ++wordLetterId)
+    auto reversedCircleWord = circleWord;
+    for (auto &letter : reversedCircleWord)
     {
-        if (!(word[wordLetterId] == bigWord[wordLetterId].second))
+        letter.second = letter.second.inverse();
+    }
+    std::reverse(reversedCircleWord.begin(), reversedCircleWord.end());
+
+    std::size_t longestEntry = 0;
+    std::size_t entryBegin = 0;
+
+    { // knuth morris pratt
+        std::string text;
+        auto addToken = [&](const GroupElement &g) {
+            text += (g.reversed ? static_cast<char>(g.name + 'A' - 'a') : g.name);
+        };
+        for (auto &letter : word)
         {
-            break;
+            addToken(letter);
         }
-        curNode = bigWord[wordLetterId].first.lock();
-        ++notSplitterIters;
+        text += '#';
+        for (auto &letter : reversedCircleWord)
+        {
+            addToken(letter.second);
+        }
+        std::size_t n = text.length();
+        std::vector<int> pi(n);
+        for (std::size_t i = 1; i < n; ++i)
+        {
+            int j = pi[i - 1];
+            for (; j > 0 && text[i] != text[j]; j = pi[j - 1])
+                ;
+            if (text[i] == text[j])
+                ++j;
+            pi[i] = j;
+        }
+        for (std::size_t i = word.size(); i < text.length(); ++i)
+        {
+            if (pi[i] > static_cast<int>(longestEntry))
+            {
+                longestEntry = pi[i];
+                entryBegin = i - longestEntry - word.size();
+            }
+        }
     }
 
-    if (notSplitterIters == word.size())
+    if (longestEntry == 0 ||
+        longestEntry == circleWord.size() ||
+        entryBegin == 0 ||
+        longestEntry == word.size() ||
+        entryBegin + longestEntry == circleWord.size())
     {
+        shuffleTerminal();
         return;
     }
 
-    bigWord.erase(bigWord.begin(), bigWord.begin() + notSplitterIters);
-    std::size_t longestCommonSuffixLen = 0;
-    for (std::size_t i = 0; i < bigWord.size() && i < word.size(); ++i)
-    {
-        if (!bigWord[bigWord.size() - 1 - longestCommonSuffixLen].second.isOpposite(word[word.size() - 1 - longestCommonSuffixLen]))
-        {
-            break;
-        }
-        ++longestCommonSuffixLen;
-    }
-    std::size_t freeLettersCnt = 0;
-    for (; freeLettersCnt + longestCommonSuffixLen + notSplitterIters < word.size() - 1; ++freeLettersCnt)
+    std::size_t normalWordEntryBegin = circleWord.size() - longestEntry - entryBegin;
+    auto branchFrom = circleWord[normalWordEntryBegin - 1].first;
+    auto branchTo = circleWord[normalWordEntryBegin + longestEntry - 1].first;
+
+    auto curNode = branchFrom;
+
+    for (std::size_t i = longestEntry; i < word.size() - 1; ++i)
     {
         auto prevNode = curNode;
-        auto inversed = word[wordLetterId].inverse();
-        curNode = curNode->addTransitionToNewNode(word[wordLetterId++]).lock();
-        curNode->addTransition(prevNode, inversed);
+        curNode = prevNode.lock()->addTransitionToNewNode(word[i]);
+        curNode.lock()->addTransition(prevNode, word[i].inverse());
     }
-    if (bigWord.empty())
-    {
-        bigWord.emplace_back(terminal_, word.back());
-    }
-    int id = bigWord.size() - longestCommonSuffixLen - 1;
-    id = std::max(0, id);
-    curNode->addTransition(bigWord[id].first,
-                           word[wordLetterId]);
-
-    // if (id > 0)
-    // {
-    bigWord[id].first.lock()->addTransition(curNode, word[wordLetterId].inverse());
-    auto lastBigWordLetter = bigWord[id].first.lock();
-    if (lastBigWordLetter == startNode)
-    {
-        lastBigWordLetter->swapLastAdditions();
-    }
-    // }
+    curNode.lock()->addTransition(branchTo, word.back());
+    branchTo.lock()->addTransition(curNode, word.back().inverse());
+    branchTo.lock()->swapLastAdditions();
     shuffleTerminal();
 }
 } // namespace van_kampmen

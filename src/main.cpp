@@ -15,6 +15,12 @@ int main(int argc, char **argv)
     van_kampmen::Graph graph;
     van_kampmen::Diagramm diagramm(graph);
 
+    std::size_t graph_size = 5;
+    if (argc >= 3)
+    {
+        graph_size = std::stoi(argv[2]);
+    }
+
     std::mt19937 random;
     auto randint = [&](int begin, int end) {
         return random() % (end - begin + 1) + begin;
@@ -23,7 +29,7 @@ int main(int argc, char **argv)
     for (auto word : words)
     {
         diagramm.bindWord(word);
-        for (int it = randint(0, word.size()); it; --it)
+        for (int it = randint(0, word.size() * graph_size); it; --it)
         {
             std::rotate(word.begin(), word.begin() + 1, word.end());
             diagramm.bindWord(word);
