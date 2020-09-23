@@ -1,4 +1,5 @@
 #include <random>
+#include <regex>
 #include <sstream>
 
 #include "Graph.hpp"
@@ -11,30 +12,35 @@ int main(int argc, char **argv)
     {
         throw std::invalid_argument("specify group representation");
     }
-    auto words = van_kampmen::GroupRepresentationParser::parse(argv[1]);
+
+    std::string filename(argv[1]);
+    std::ifstream file(filename);
+
+    if (!file.good())
+    {
+        throw std::invalid_argument("file '" + filename + "' not found");
+    }
+
+    std::string text((std::istreambuf_iterator<char>(file)),
+                     std::istreambuf_iterator<char>());
+
+    auto words = van_kampmen::GroupRepresentationParser::parse(text);
     van_kampmen::Graph graph;
     van_kampmen::Diagramm diagramm(graph);
 
-    std::size_t graph_size = 5;
-    if (argc >= 3)
-    {
-        graph_size = std::stoi(argv[2]);
-    }
-
-    std::mt19937 random;
-    auto randint = [&](int begin, int end) {
-        return random() % (end - begin + 1) + begin;
-    };
-
+    int prevRes = -1;
+    size_t cnt = 0;
     for (auto word : words)
     {
-        diagramm.bindWord(word);
-        for (int it = randint(0, word.size() * graph_size); it; --it)
+        int res = static_cast<int>(static_cast<double>(cnt++) / static_cast<double>(words.size()) * 1000.0);
+        if (res != prevRes)
         {
-            std::rotate(word.begin(), word.begin() + 1, word.end());
-            diagramm.bindWord(word);
+            std::cout << "\rprogress (%): " << static_cast<double>(res) / 10.0;
+            prevRes = res;
         }
+        diagramm.bindWord(word);
     }
+    std::cout << '\r';
 
     std::stringstream word;
     for (auto letter : diagramm.getWord())
@@ -42,6 +48,9 @@ int main(int argc, char **argv)
         word << letter.second.name << (letter.second.reversed ? "*" : "");
     }
     diagramm.getTerminal()->setLabel("S");
-    diagramm.getTerminal()->setComment(word.str());
-    graph.printSelf(std::cout);
+    // diagramm.getTerminal()->setComment(word.str());
+
+    std::string outputFilename = filename + ".dot";
+    std::ofstream outFile(outputFilename);
+    graph.printSelf(outFile);
 }

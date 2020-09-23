@@ -25,51 +25,41 @@ std::vector<std::string> split_by_delim(const std::string &word, const std::stri
     return tokens;
 }
 
-std::vector<std::vector<GroupElement>> GroupRepresentationParser::parse(const std::string &repr)
+std::vector<std::vector<GroupElement>> GroupRepresentationParser::parse(const std::string &text)
 {
-    auto alphabetBegin = std::find(repr.begin(), repr.end(), '<');
-    auto splitter = std::find(alphabetBegin, repr.end(), '|');
-    auto alphabetEnd = std::find(splitter + 1, repr.end(), '>');
-
-    if (alphabetEnd == repr.end())
-    {
-        throw std::invalid_argument("invalid representation format");
-    }
-
-    std::unordered_map<char, bool> isInAlphabet;
-
-    for (auto c : split_by_delim({alphabetBegin + 1, splitter - 1}, ", "))
-    {
-        if (c.length() != 1 || !('a' <= c[0] && c[0] <= 'z'))
+    auto withoutBorders = [](const std::string &s) {
+        if (s.length() < 2)
         {
-            throw std::invalid_argument("variable name must contain one lowercase latin character");
+            throw std::invalid_argument("can not parse pattern '" + s + "'");
         }
-        isInAlphabet[c[0]] = true;
-    }
+        return s.substr(1, s.length() - 2);
+    };
 
-    std::vector<std::vector<GroupElement>> result;
+    auto alphabetBegin = text.begin() + text.find("FreeGroup( ") + std::string("FreeGroup( ").length();
+    auto alphabetEnd = text.begin() + text.find(" );", std::distance(text.begin(), alphabetBegin));
 
-    for (auto word : split_by_delim({splitter + 2, alphabetEnd}, ", "))
+    auto wordsBegin = text.begin() + text.find("[ ", std::distance(text.begin(), alphabetEnd)) + std::string("[ ").length();
+    auto wordsEnd = text.begin() + text.find(" ]", std::distance(text.begin(), wordsBegin));
+
+    std::vector<std::vector<van_kampmen::GroupElement>> words;
+
+    for (auto word : van_kampmen::split_by_delim({wordsBegin, wordsEnd}, ", "))
     {
-        std::vector<GroupElement> currentWord;
-        for (std::size_t i = 0; i < word.length(); ++i)
+        std::vector<van_kampmen::GroupElement> curWord;
+        for (auto c : van_kampmen::split_by_delim(word, "*"))
         {
-            if (!isInAlphabet[word[i]])
+            auto powChar = c.find('^') + c.begin();
+            auto element = c.substr(0, powChar - c.begin());
+            if (element[0] == '(')
             {
-                throw std::invalid_argument("word '" + word + "' contains character '" + word[i] + "' which is not in alphabet");
+                element = withoutBorders(element);
             }
-            if (i + 1 < word.length() && word[i + 1] == '*')
-            {
-                currentWord.push_back({word[i], true});
-                ++i;
-            }
-            else
-            {
-                currentWord.push_back({word[i], false});
-            }
+            bool reversed = element.size() != c.size();
+            curWord.emplace_back(GroupElement{std::move(element), reversed});
         }
-        result.push_back(std::move(currentWord));
+        words.emplace_back(std::move(curWord));
     }
-    return result;
+
+    return words;
 }
 } // namespace van_kampmen

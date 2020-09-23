@@ -1,6 +1,6 @@
 # Van Kampen diagramm generator
 
-Tool for generating Van Kampen diagramms. Not all generated graphs are planar :(
+Tool for generating Van Kampen diagramms.
 
 ## Usage
 
@@ -21,14 +21,14 @@ make
 ### To generate .dot file
 
 ```bash
-./build/van_kampen_diagramm GROUP_REPRESENTATION GRAPH_SIZE  > diagramm.dot
+./build/van_kampen_diagramm <group_representation_path> > diagramm.dot
 ```
 
 Where:
 
-* GROUP_REPRESENTATION - string in format `<a, b, c, d | a*bc*d, ab*b*d, ab>`. All letters must be lowercase latin and `x*` states for inversed `x`.
-
-* [optional] GRAPH_SIZE - generator iterations, 5 by default.
+* `group_representation_path` - path to group representation file in a format corresponding to
+[LangToGroup](https://github.com/YaccConstructor/LangToGroup)
+format.
 
 ### To generate [format] file
 
@@ -41,10 +41,11 @@ Supported formats list can be found at [graphviz.org](https://graphviz.org/doc/i
 ## Example
 
 ```bash
-./build/van_kampen_diagramm "<a, b | aba*b*, ab*a*b>" 10 > build/diagramm.dot
-dot -Tpng build/diagramm.dot -o outfile.png
+$ head -c 40 out.txt
+local f, g;
+f := FreeGroup( "f.1", "f.2"
+$ ./van_kampen_diagramm out.txt
+$ dot -Tpng ../../LangToGroup/out.txt.dot -o out.png
 ```
 
-Will generate Van Kampen diagramm for alphabet `ab` and following word.
-
-![example](media/outfile.png)
+Will generate Van Kampen diagramm for alphabet group representation in `out.txt` file.
