@@ -106,20 +106,20 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
     std::size_t entryBegin = 0;
 
     { // knuth morris pratt
-        std::string text;
+        std::vector<std::string> text;
         auto addToken = [&](const GroupElement &g) {
-            text += (g.reversed ? static_cast<char>(g.name + 'A' - 'a') : g.name);
+            text.emplace_back(g.reversed ? (g.name + "^") : g.name);
         };
         for (auto &letter : word)
         {
             addToken(letter);
         }
-        text += '#';
+        text.emplace_back("#");
         for (auto &letter : reversedCircleWord)
         {
             addToken(letter.second);
         }
-        std::size_t n = text.length();
+        std::size_t n = text.size();
         std::vector<int> pi(n);
         for (std::size_t i = 1; i < n; ++i)
         {
@@ -130,7 +130,7 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
                 ++j;
             pi[i] = j;
         }
-        for (std::size_t i = word.size(); i < text.length(); ++i)
+        for (std::size_t i = word.size(); i < text.size(); ++i)
         {
             if (pi[i] > static_cast<int>(longestEntry))
             {

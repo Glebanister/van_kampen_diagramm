@@ -4,6 +4,8 @@
 
 namespace van_kampmen
 {
+    std::vector<std::string> split_by_delim(const std::string &word, const std::string &delim);
+
     class GroupRepresentationParser
     {
     public:

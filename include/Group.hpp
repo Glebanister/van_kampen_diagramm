@@ -10,7 +10,7 @@ namespace van_kampmen
     class GroupElement
     {
     public:
-        char name = '0';
+        std::string name = "";
         bool reversed = false;
 
         bool operator==(const GroupElement &other) const;
