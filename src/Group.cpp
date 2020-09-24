@@ -62,13 +62,14 @@ std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> Diagramm::getWord()
 
 void Diagramm::shuffleTerminal()
 {
+    static int seed = 0;
     auto nextBigWord = getWord();
     if (nextBigWord.size() == 0)
     {
         return;
     }
     terminal_->highlightNode(false);
-    terminal_ = nextBigWord[rand() % nextBigWord.size()].first.lock();
+    terminal_ = nextBigWord[(rand() + seed++) % nextBigWord.size()].first.lock();
     terminal_->highlightNode(true);
 }
 
@@ -132,7 +133,8 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
         }
         for (std::size_t i = word.size(); i < text.size(); ++i)
         {
-            if (pi[i] > static_cast<int>(longestEntry))
+            if (pi[i] > static_cast<int>(longestEntry) ||
+                (rand() % 15 && pi[i] == static_cast<int>(longestEntry)))
             {
                 longestEntry = pi[i];
                 entryBegin = i - longestEntry - word.size();

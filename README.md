@@ -49,3 +49,5 @@ $ dot -Tpng ../../LangToGroup/out.txt.dot -o out.png
 ```
 
 Will generate Van Kampen diagramm for alphabet group representation in `out.txt` file.
+
+![example](media/example.jpg)

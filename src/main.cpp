@@ -1,5 +1,4 @@
 #include <random>
-#include <regex>
 #include <sstream>
 
 #include "Graph.hpp"
@@ -25,17 +24,25 @@ int main(int argc, char **argv)
                      std::istreambuf_iterator<char>());
 
     auto words = van_kampmen::GroupRepresentationParser::parse(text);
+    std::random_shuffle(words.begin(), words.end());
     van_kampmen::Graph graph;
     van_kampmen::Diagramm diagramm(graph);
 
     int prevRes = -1;
     size_t cnt = 0;
+    std::size_t max_iterations = 20000000;
+    std::size_t total = std::min(max_iterations, words.size());
     for (auto word : words)
     {
-        int res = static_cast<int>(static_cast<double>(cnt++) / static_cast<double>(words.size()) * 1000.0);
+        if (!(max_iterations--))
+        {
+            break;
+        }
+        int res = static_cast<int>(static_cast<double>(cnt++) / static_cast<double>(total) * 1000.0);
         if (res != prevRes)
         {
             std::cout << "\rprogress (%): " << static_cast<double>(res) / 10.0;
+            std::cout.flush();
             prevRes = res;
         }
         diagramm.bindWord(word);
