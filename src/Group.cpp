@@ -13,9 +13,14 @@ bool GroupElement::isOpposite(const GroupElement &other)
     return name == other.name && reversed != other.reversed;
 }
 
-GroupElement GroupElement::inverse() const
+GroupElement GroupElement::inversed() const
 {
     return {name, !reversed};
+}
+
+void GroupElement::inverse() noexcept
+{
+    reversed ^= true;
 }
 
 Diagramm::Diagramm(Graph &graph)
@@ -80,18 +85,33 @@ std::shared_ptr<Node> Diagramm::getTerminal() const noexcept
 
 void Diagramm::bindWord(const std::vector<GroupElement> &word)
 {
+    class TerminalShuffler
+    {
+    public:
+        TerminalShuffler(Diagramm &dg)
+            : diagramm(dg) {}
+
+        ~TerminalShuffler()
+        {
+            diagramm.shuffleTerminal();
+        }
+
+    private:
+        Diagramm &diagramm;
+    } shuffer(*this);
+
     auto circleWord = getWord();
-    if (circleWord.size() == 0)
+    if (circleWord.empty())
     {
         auto curNode = std::weak_ptr(terminal_);
         for (std::size_t i = 0; i < word.size() - 1; ++i)
         {
             auto prevNode = curNode;
             curNode = prevNode.lock()->addTransitionToNewNode(word[i]);
-            curNode.lock()->addTransition(prevNode, word[i].inverse());
+            curNode.lock()->addTransition(prevNode, word[i].inversed());
         }
         curNode.lock()->addTransition(terminal_, word.back());
-        terminal_->addTransition(curNode.lock(), word.back().inverse());
+        terminal_->addTransition(curNode.lock(), word.back().inversed());
         terminal_->swapLastAdditions();
         return;
     }
@@ -99,7 +119,7 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
     auto reversedCircleWord = circleWord;
     for (auto &letter : reversedCircleWord)
     {
-        letter.second = letter.second.inverse();
+        letter.second.inverse();
     }
     std::reverse(reversedCircleWord.begin(), reversedCircleWord.end());
 
@@ -109,13 +129,13 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
     { // knuth morris pratt
         std::vector<std::string> text;
         auto addToken = [&](const GroupElement &g) {
-            text.emplace_back(g.reversed ? (g.name + "^") : g.name);
+            text.emplace_back(g.reversed ? (g.name + "!") : g.name);
         };
         for (auto &letter : word)
         {
             addToken(letter);
         }
-        text.emplace_back("#");
+        text.emplace_back("\0");
         for (auto &letter : reversedCircleWord)
         {
             addToken(letter.second);
@@ -148,7 +168,6 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
         longestEntry == word.size() ||
         entryBegin + longestEntry == circleWord.size())
     {
-        shuffleTerminal();
         return;
     }
 
@@ -162,11 +181,10 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
     {
         auto prevNode = curNode;
         curNode = prevNode.lock()->addTransitionToNewNode(word[i]);
-        curNode.lock()->addTransition(prevNode, word[i].inverse());
+        curNode.lock()->addTransition(prevNode, word[i].inversed());
     }
     curNode.lock()->addTransition(branchTo, word.back());
-    branchTo.lock()->addTransition(curNode, word.back().inverse());
+    branchTo.lock()->addTransition(curNode, word.back().inversed());
     branchTo.lock()->swapLastAdditions();
-    shuffleTerminal();
 }
 } // namespace van_kampmen

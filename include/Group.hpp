@@ -17,7 +17,8 @@ namespace van_kampmen
 
         bool isOpposite(const GroupElement &other);
 
-        GroupElement inverse() const;
+        GroupElement inversed() const;
+        void inverse() noexcept;
     };
 
     class Diagramm
