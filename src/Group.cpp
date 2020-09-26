@@ -1,7 +1,7 @@
 #include "Group.hpp"
 #include "Graph.hpp"
 
-namespace van_kampmen
+namespace van_kampen
 {
 bool GroupElement::operator==(const GroupElement &other) const
 {

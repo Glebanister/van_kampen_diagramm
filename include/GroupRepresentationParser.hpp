@@ -2,7 +2,7 @@
 
 #include "Group.hpp"
 
-namespace van_kampmen
+namespace van_kampen
 {
     std::vector<std::string> split_by_delim(const std::string &word, const std::string &delim);
 

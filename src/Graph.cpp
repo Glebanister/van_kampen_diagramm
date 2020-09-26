@@ -1,6 +1,6 @@
 #include "Graph.hpp"
 
-namespace van_kampmen
+namespace van_kampen
 {
 bool Node::reverse_iterator::isValid() const noexcept
 {

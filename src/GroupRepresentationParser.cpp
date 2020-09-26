@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-namespace van_kampmen
+namespace van_kampen
 {
 std::vector<std::string> split_by_delim(const std::string &word, const std::string &delim)
 {
@@ -41,12 +41,12 @@ std::vector<std::vector<GroupElement>> GroupRepresentationParser::parse(const st
     auto wordsBegin = text.begin() + text.find("[ ", std::distance(text.begin(), alphabetEnd)) + std::string("[ ").length();
     auto wordsEnd = text.begin() + text.find(" ]", std::distance(text.begin(), wordsBegin));
 
-    std::vector<std::vector<van_kampmen::GroupElement>> words;
+    std::vector<std::vector<van_kampen::GroupElement>> words;
 
-    for (auto word : van_kampmen::split_by_delim({wordsBegin, wordsEnd}, ", "))
+    for (auto word : van_kampen::split_by_delim({wordsBegin, wordsEnd}, ", "))
     {
-        std::vector<van_kampmen::GroupElement> curWord;
-        for (auto c : van_kampmen::split_by_delim(word, "*"))
+        std::vector<van_kampen::GroupElement> curWord;
+        for (auto c : van_kampen::split_by_delim(word, "*"))
         {
             auto powChar = c.find('^') + c.begin();
             auto element = c.substr(0, powChar - c.begin());

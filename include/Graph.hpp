@@ -10,7 +10,7 @@
 
 #include "Group.hpp"
 
-namespace van_kampmen
+namespace van_kampen
 {
     class GroupElement;
     class Diagramm;

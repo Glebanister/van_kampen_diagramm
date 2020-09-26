@@ -2,7 +2,7 @@
 
 #include <Graph.hpp>
 
-namespace van_kampmen
+namespace van_kampen
 {
     class Graph;
     class Node;

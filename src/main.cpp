@@ -1,63 +1,123 @@
 #include <random>
 #include <sstream>
 
+#include "cxxopts.hpp"
+
 #include "Graph.hpp"
 #include "Group.hpp"
 #include "GroupRepresentationParser.hpp"
+#include "VanKampenUtils.hpp"
 
-int main(int argc, char **argv)
+class ProcessLogger
 {
-    if (argc < 2)
+public:
+private:
+};
+
+int main(int argc, const char **argv)
+{
+    try
     {
-        throw std::invalid_argument("specify group representation");
-    }
+        std::string inputFileName, outputFileName, outputFileFormat = "dot", wordOutputFileName;
+        std::size_t cellsLimit = 0;
+        bool shuffleGroup = true;
+        bool quiet = false;
+        bool hasCellsLimit = false;
 
-    std::string filename(argv[1]);
-    std::ifstream file(filename);
-
-    if (!file.good())
-    {
-        throw std::invalid_argument("file '" + filename + "' not found");
-    }
-
-    std::string text((std::istreambuf_iterator<char>(file)),
-                     std::istreambuf_iterator<char>());
-
-    auto words = van_kampmen::GroupRepresentationParser::parse(text);
-    std::random_shuffle(words.begin(), words.end());
-    van_kampmen::Graph graph;
-    van_kampmen::Diagramm diagramm(graph);
-
-    int prevRes = -1;
-    size_t cnt = 0;
-    std::size_t max_iterations = 20000000;
-    std::size_t total = std::min(max_iterations, words.size());
-    for (auto word : words)
-    {
-        if (!(max_iterations--))
         {
-            break;
+            cxxopts::Options options("vankamp-vis", "Van Kampen diagram visualisation tool");
+
+            options.add_options()(
+                "i,input", "Specify input file", cxxopts::value(inputFileName), "required")(
+                // "f,format", "Set file format", cxxopts::value(outputFileFormat)->default_value("dot"), "")(
+                "o,output", "Specify custom output file", cxxopts::value(outputFileName)->default_value("vankamp-vis-out"), "")(
+                "c,cycle-output", "Set boundary cycle output file", cxxopts::value(wordOutputFileName)->default_value("vankamp-vis-cycle.txt"), "")(
+                "s,shuffle-group", "Shuffle group elements", cxxopts::value(shuffleGroup)->default_value("true"), "")(
+                "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
+                "l,limit", "Set cells limit", cxxopts::value(cellsLimit), "integer")(
+                "h,help", "Print usage");
+
+            auto result = options.parse(argc, argv);
+
+            if (result.count("help"))
+            {
+                std::cout << options.help() << std::endl;
+                return 0;
+            }
+            if (!result.count("input"))
+            {
+                throw cxxopts::option_required_exception("input");
+            }
+            outputFileName += "." + outputFileFormat;
+            hasCellsLimit = result.count("limit");
         }
-        int res = static_cast<int>(static_cast<double>(cnt++) / static_cast<double>(total) * 1000.0);
-        if (res != prevRes)
+
+        std::ifstream inputFile(inputFileName);
+
+        if (!inputFile.good())
         {
-            std::cout << "\rprogress (%): " << static_cast<double>(res) / 10.0;
-            std::cout.flush();
-            prevRes = res;
+            throw std::invalid_argument("cannot open '" + inputFileName + "'");
         }
-        diagramm.bindWord(word);
-    }
-    std::cout << '\r';
 
-    std::stringstream word;
-    for (auto letter : diagramm.getWord())
+        std::string text((std::istreambuf_iterator<char>(inputFile)),
+                         std::istreambuf_iterator<char>());
+
+        auto words = van_kampen::GroupRepresentationParser::parse(text);
+        if (shuffleGroup)
+        {
+            std::random_shuffle(words.begin(), words.end());
+        }
+
+        van_kampen::Graph graph;
+        van_kampen::Diagramm diagramm(graph);
+
+        std::size_t totalIterations = words.size();
+        if (hasCellsLimit)
+        {
+            totalIterations = std::min(totalIterations, cellsLimit);
+        }
+        van_kampen::ProcessLogger logger(totalIterations, std::clog, "Diagram generation");
+        for (const auto &word : words)
+        {
+            if (logger.iterate() >= totalIterations)
+            {
+                break;
+            }
+            diagramm.bindWord(word);
+        }
+
+        {
+            std::ofstream wordOutputFile(wordOutputFileName);
+            if (!wordOutputFile.good())
+            {
+                std::cerr << "cannot write to file '" << wordOutputFileName << "'" << std::endl;
+            }
+            else
+            {
+                auto word = diagramm.getWord();
+                for (std::size_t i = 0; i < word.size(); ++i)
+                {
+                    auto &letter = word[i];
+                    wordOutputFile << letter.second.name << (letter.second.reversed ? "^(-1)" : "");
+                    if (i < word.size() - 1)
+                    {
+                        wordOutputFile << "*";
+                    }
+                }
+            }
+        }
+
+        diagramm.getTerminal()->setLabel("S");
+        std::ofstream outFile(outputFileName);
+        if (!outFile.good())
+        {
+            throw std::invalid_argument("cannot write to file '" + outputFileName + "'");
+        }
+        graph.printSelf(outFile);
+    }
+    catch (const std::exception &e)
     {
-        word << letter.second.name << (letter.second.reversed ? "*" : "");
+        std::cerr << e.what() << '\n';
+        return 0;
     }
-    diagramm.getTerminal()->setLabel("S");
-    // diagramm.getTerminal()->setComment(word.str());
-
-    std::string outputFilename = filename + ".dot";
-    std::ofstream outFile(outputFilename);
-    graph.printSelf(outFile);
 }
