@@ -18,19 +18,38 @@ mkdir build && cd build
 make
 ```
 
-### To generate .dot file
+### Generate .dot file
 
 ```bash
-./build/van_kampen_diagramm <group_representation_path> > diagramm.dot
+./vankamp-vis -i <group-representation-path>
 ```
 
-Where:
+Will generate `vankamp-vis-out.dot`
 
-* `group_representation_path` - path to group representation file in a format corresponding to
+Where `group-representation-path` - path to group representation file in a format corresponding to
 [LangToGroup](https://github.com/YaccConstructor/LangToGroup)
 format.
 
-Group representation example:
+More about generation parameters read by adding `-h` flag:
+
+```bash
+$ ./vankamp-vis -i ../../LangToGroup/out.txt -h
+Van Kampen diagram visualisation tool
+Usage:
+  vankamp-vis [OPTION...]
+
+  -i, --input required    Specify input file
+  -o, --output arg        Specify custom output file (default:
+                          vankamp-vis-out)
+  -c, --cycle-output arg  Set boundary cycle output file (default:
+                          vankamp-vis-cycle.txt)
+  -s, --shuffle-group     Shuffle group elements (default: true)
+  -q, --quiet             Do not log status to console
+  -l, --limit integer     Set cells limit
+  -h, --help              Print usage
+```
+
+Group representation format example:
 
 ```bash
 any text before representation
@@ -39,10 +58,10 @@ g := f / [ (f.20)^(-1)*(f.1)^(-1)*f.20*f.1, (f.20)^(-1)*(f.2)^(-1)*f.20*f.2, (f.
 any text after representation
 ```
 
-### To generate [format] file
+### Generate [format] file
 
 ```bash
-dot -T[format] diagramm.dot -o outfile.[format]
+dot -T[format] <your-diagramm-path> -o outfile.[format]
 ```
 
 Supported formats list can be found at [graphviz.org](https://graphviz.org/doc/info/output.html)
@@ -53,8 +72,8 @@ Supported formats list can be found at [graphviz.org](https://graphviz.org/doc/i
 $ head -c 40 out.txt
 local f, g;
 f := FreeGroup( "f.1", "f.2"
-$ ./van_kampen_diagramm out.txt
-$ dot -Tpng ../../LangToGroup/out.txt.dot -o out.png
+$ ./vankamp-vis -i out.txt
+$ dot -Tsvg vankamp-vis-out.dot -o out.svg
 ```
 
 Will generate Van Kampen diagramm for alphabet group representation in `out.txt` file.
