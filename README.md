@@ -36,15 +36,15 @@ Where `group-representation-path` - path to group representation file in a forma
 [LangToGroup](https://github.com/YaccConstructor/LangToGroup)
 format.
 
-|        Option         | Param                                                              | Argument type            |
-|:---------------------:|:-------------------------------------------------------------------|--------------------------|
-|     `-i, --input`     | Specify input file                                                 | string                   |
-|    `-o, --output`     | Specify custom output file (default:  vankamp-vis-out)             | string                   |
-| `-c, --cycle-output`  | Set boundary cycle output file (default:    vankamp-vis-cycle.txt) | string                   |
-| `-s, --shuffle-group` | `Shuffle group elements (default: true)`                           | bool ("true" or "false") |
-|     `-q, --quiet`     | Do not log status to console                                       | bool                     |
-|     `-l, --limit`     | Set cells limit                                                    | integer                  |
-|     `-h, --help`      | Print usage                                                        | _None_                   |
+|        Option        | Param                                                              | Argument type |
+|:--------------------:|:-------------------------------------------------------------------|---------------|
+|    `-i, --input`     | Specify input file                                                 | string        |
+|    `-o, --output`    | Specify custom output file (default:  vankamp-vis-out)             | string        |
+| `-c, --cycle-output` | Set boundary cycle output file (default:    vankamp-vis-cycle.txt) | string        |
+|  `-n, --no-shuffle`  | Do not shuffle representation before generation                    | -             |
+|    `-q, --quiet`     | Do not log status to console                                       | -             |
+|    `-l, --limit`     | Set cells limit                                                    | integer       |
+|     `-h, --help`     | Print usage                                                        | -             |
 
 Group representation format example:
 
