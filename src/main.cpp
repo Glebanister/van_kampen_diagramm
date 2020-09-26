@@ -1,3 +1,4 @@
+#include <cassert>
 #include <random>
 #include <sstream>
 
@@ -18,9 +19,9 @@ int main(int argc, const char **argv)
 {
     try
     {
-        std::string inputFileName, outputFileName, outputFileFormat = "dot", wordOutputFileName;
+        std::string inputFileName, outputFileName, wordOutputFileName;
         std::size_t cellsLimit = 0;
-        bool shuffleGroup = true;
+        bool notShuffleGroup = false;
         bool quiet = false;
         bool hasCellsLimit = false;
 
@@ -30,9 +31,9 @@ int main(int argc, const char **argv)
             options.add_options()(
                 "i,input", "Specify input file", cxxopts::value(inputFileName), "required")(
                 // "f,format", "Set file format", cxxopts::value(outputFileFormat)->default_value("dot"), "")(
-                "o,output", "Specify custom output file", cxxopts::value(outputFileName)->default_value("vankamp-vis-out"), "")(
+                "o,output", "Specify output file", cxxopts::value(outputFileName)->default_value("vankamp-vis-out.dot"), "")(
                 "c,cycle-output", "Set boundary cycle output file", cxxopts::value(wordOutputFileName)->default_value("vankamp-vis-cycle.txt"), "")(
-                "s,shuffle-group", "Shuffle group elements", cxxopts::value(shuffleGroup)->default_value("true"), "")(
+                "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
                 "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
                 "l,limit", "Set cells limit", cxxopts::value(cellsLimit), "integer")(
                 "h,help", "Print usage");
@@ -48,7 +49,6 @@ int main(int argc, const char **argv)
             {
                 throw cxxopts::option_required_exception("input");
             }
-            outputFileName += "." + outputFileFormat;
             hasCellsLimit = result.count("limit");
         }
 
@@ -63,7 +63,7 @@ int main(int argc, const char **argv)
                          std::istreambuf_iterator<char>());
 
         auto words = van_kampen::GroupRepresentationParser::parse(text);
-        if (shuffleGroup)
+        if (!notShuffleGroup)
         {
             std::random_shuffle(words.begin(), words.end());
         }
@@ -76,7 +76,7 @@ int main(int argc, const char **argv)
         {
             totalIterations = std::min(totalIterations, cellsLimit);
         }
-        van_kampen::ProcessLogger logger(totalIterations, std::clog, "Relations used");
+        van_kampen::ProcessLogger logger(totalIterations, std::clog, "Relations used", quiet);
         std::size_t addedWordsCount = 0;
         auto iterateOverWordsOnce = [&]() {
             for (const auto &word : words)
