@@ -27,7 +27,7 @@ namespace van_kampen
         Diagramm(Graph &graph);
 
         std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> getWord();
-        void bindWord(const std::vector<GroupElement> &word);
+        bool bindWord(const std::vector<GroupElement> &word);
         void shuffleTerminal();
         std::shared_ptr<Node> getTerminal() const noexcept;
 
@@ -36,4 +36,4 @@ namespace van_kampen
         Graph &graph_;
         std::shared_ptr<Node> firstNode_ = nullptr;
     };
-} // namespace van_kampmen
+} // namespace van_kampen

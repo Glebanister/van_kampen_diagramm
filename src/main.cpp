@@ -76,15 +76,24 @@ int main(int argc, const char **argv)
         {
             totalIterations = std::min(totalIterations, cellsLimit);
         }
-        van_kampen::ProcessLogger logger(totalIterations, std::clog, "Diagram generation");
-        for (const auto &word : words)
-        {
-            if (logger.iterate() >= totalIterations)
+        van_kampen::ProcessLogger logger(totalIterations, std::clog, "Relations used");
+        std::size_t addedWordsCount = 0;
+        auto iterateOverWordsOnce = [&]() {
+            for (const auto &word : words)
             {
-                break;
+                if (diagramm.bindWord(word))
+                {
+                    addedWordsCount += 1;
+                    if (logger.iterate() >= totalIterations)
+                    {
+                        break;
+                    }
+                }
             }
-            diagramm.bindWord(word);
-        }
+        };
+
+        iterateOverWordsOnce();
+        iterateOverWordsOnce();
 
         {
             std::ofstream wordOutputFile(wordOutputFileName);

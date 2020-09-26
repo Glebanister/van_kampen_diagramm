@@ -83,7 +83,7 @@ std::shared_ptr<Node> Diagramm::getTerminal() const noexcept
     return terminal_;
 }
 
-void Diagramm::bindWord(const std::vector<GroupElement> &word)
+bool Diagramm::bindWord(const std::vector<GroupElement> &word)
 {
     class TerminalShuffler
     {
@@ -113,7 +113,7 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
         curNode.lock()->addTransition(terminal_, word.back());
         terminal_->addTransition(curNode.lock(), word.back().inversed());
         terminal_->swapLastAdditions();
-        return;
+        return true;
     }
 
     auto reversedCircleWord = circleWord;
@@ -162,13 +162,13 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
         }
     }
 
-    if (longestEntry == 0 ||
+    if (longestEntry == 0 || // TODO: some are very strict
         longestEntry == circleWord.size() ||
         entryBegin == 0 ||
         longestEntry == word.size() ||
         entryBegin + longestEntry == circleWord.size())
     {
-        return;
+        return false;
     }
 
     std::size_t normalWordEntryBegin = circleWord.size() - longestEntry - entryBegin;
@@ -186,5 +186,6 @@ void Diagramm::bindWord(const std::vector<GroupElement> &word)
     curNode.lock()->addTransition(branchTo, word.back());
     branchTo.lock()->addTransition(curNode, word.back().inversed());
     branchTo.lock()->swapLastAdditions();
+    return true;
 }
-} // namespace van_kampmen
+} // namespace van_kampen
