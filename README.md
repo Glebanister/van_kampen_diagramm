@@ -11,6 +11,12 @@ sudo apt-get install graphviz
 sudo apt-get install graphviz-dev
 ```
 
+### Clone this repository recursively
+
+```bash
+git clone https://github.com/Glebanister/van_kampen_diagramm --recursive
+```
+
 ### Build
 
 ```bash
@@ -30,24 +36,15 @@ Where `group-representation-path` - path to group representation file in a forma
 [LangToGroup](https://github.com/YaccConstructor/LangToGroup)
 format.
 
-More about generation parameters read by adding `-h` flag:
-
-```bash
-$ ./vankamp-vis -i ../../LangToGroup/out.txt -h
-Van Kampen diagram visualisation tool
-Usage:
-  vankamp-vis [OPTION...]
-
-  -i, --input required    Specify input file
-  -o, --output arg        Specify custom output file (default:
-                          vankamp-vis-out)
-  -c, --cycle-output arg  Set boundary cycle output file (default:
-                          vankamp-vis-cycle.txt)
-  -s, --shuffle-group     Shuffle group elements (default: true)
-  -q, --quiet             Do not log status to console
-  -l, --limit integer     Set cells limit
-  -h, --help              Print usage
-```
+|        Option         | Param                                                              | Argument type            |
+|:---------------------:|:-------------------------------------------------------------------|--------------------------|
+|     `-i, --input`     | Specify input file                                                 | string                   |
+|    `-o, --output`     | Specify custom output file (default:  vankamp-vis-out)             | string                   |
+| `-c, --cycle-output`  | Set boundary cycle output file (default:    vankamp-vis-cycle.txt) | string                   |
+| `-s, --shuffle-group` | `Shuffle group elements (default: true)`                           | bool ("true" or "false") |
+|     `-q, --quiet`     | Do not log status to console                                       | bool                     |
+|     `-l, --limit`     | Set cells limit                                                    | integer                  |
+|     `-h, --help`      | Print usage                                                        | _None_                   |
 
 Group representation format example:
 
