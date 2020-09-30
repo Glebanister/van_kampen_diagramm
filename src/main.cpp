@@ -9,70 +9,74 @@
 #include "GroupRepresentationParser.hpp"
 #include "VanKampenUtils.hpp"
 
-class ProcessLogger
+struct ConsoleFlags
 {
-public:
-private:
+    ConsoleFlags() = default;
+
+    ConsoleFlags(int argc, const char **argv)
+    {
+        cxxopts::Options options("vankamp-vis", "Van Kampen diagram visualisation tool");
+        options.add_options()(
+            "i,input", "Specify input file", cxxopts::value(inputFileName), "required")(
+            // "f,format", "Set file format", cxxopts::value(outputFileFormat)->default_value("dot"), "")(
+            "o,output", "Specify output file", cxxopts::value(outputFileName)->default_value("vankamp-vis-out.dot"), "")(
+            "c,cycle-output", "Set boundary cycle output file", cxxopts::value(wordOutputFileName)->default_value("vankamp-vis-cycle.txt"), "")(
+            "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
+            "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
+            "l,limit", "Set cells limit", cxxopts::value(cellsLimit), "integer")(
+            "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo), "-")(
+            "merging", "Build diagramm with iterative algorithm", cxxopts::value(mergingAlgo), "-")(
+            "h,help", "Print usage");
+
+        auto result = options.parse(argc, argv);
+
+        if (result.count("help"))
+        {
+            std::cout << options.help() << std::endl;
+            exit(0);
+        }
+        if (!result.count("input"))
+        {
+            throw cxxopts::option_required_exception("input");
+        }
+        hasCellsLimit = result.count("limit");
+    }
+
+    std::string inputFileName, outputFileName, wordOutputFileName;
+    std::size_t cellsLimit = 0;
+    bool notShuffleGroup = false;
+    bool quiet = false;
+    bool hasCellsLimit = false;
+    bool iterativeAlgo = true;
+    bool mergingAlgo = false;
 };
 
-int main(int argc, const char **argv)
+struct DiagrammGeneratingAlgorithm
 {
-    try
+    DiagrammGeneratingAlgorithm(van_kampen::Graph &graph)
+        : diagramm_(graph) {}
+
+    virtual void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) = 0;
+    virtual van_kampen::Diagramm &diagramm()
     {
-        std::string inputFileName, outputFileName, wordOutputFileName;
-        std::size_t cellsLimit = 0;
-        bool notShuffleGroup = false;
-        bool quiet = false;
-        bool hasCellsLimit = false;
+        return diagramm_;
+    }
 
-        {
-            cxxopts::Options options("vankamp-vis", "Van Kampen diagram visualisation tool");
+    virtual ~DiagrammGeneratingAlgorithm() = default;
 
-            options.add_options()(
-                "i,input", "Specify input file", cxxopts::value(inputFileName), "required")(
-                // "f,format", "Set file format", cxxopts::value(outputFileFormat)->default_value("dot"), "")(
-                "o,output", "Specify output file", cxxopts::value(outputFileName)->default_value("vankamp-vis-out.dot"), "")(
-                "c,cycle-output", "Set boundary cycle output file", cxxopts::value(wordOutputFileName)->default_value("vankamp-vis-cycle.txt"), "")(
-                "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
-                "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
-                "l,limit", "Set cells limit", cxxopts::value(cellsLimit), "integer")(
-                "h,help", "Print usage");
+protected:
+    van_kampen::Diagramm diagramm_;
+};
 
-            auto result = options.parse(argc, argv);
+struct IterativeAlgorithm : DiagrammGeneratingAlgorithm
+{
+    IterativeAlgorithm(van_kampen::Graph &graph)
+        : DiagrammGeneratingAlgorithm(graph) {}
 
-            if (result.count("help"))
-            {
-                std::cout << options.help() << std::endl;
-                return 0;
-            }
-            if (!result.count("input"))
-            {
-                throw cxxopts::option_required_exception("input");
-            }
-            hasCellsLimit = result.count("limit");
-        }
-
-        std::ifstream inputFile(inputFileName);
-
-        if (!inputFile.good())
-        {
-            throw std::invalid_argument("cannot open '" + inputFileName + "'");
-        }
-
-        std::string text((std::istreambuf_iterator<char>(inputFile)),
-                         std::istreambuf_iterator<char>());
-
-        auto words = van_kampen::GroupRepresentationParser::parse(text);
-        if (!notShuffleGroup)
-        {
-            std::random_shuffle(words.begin(), words.end());
-        }
-
-        van_kampen::Graph graph;
-        van_kampen::Diagramm diagramm(graph);
-
+    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) override
+    {
         std::size_t totalIterations = words.size();
-        if (hasCellsLimit)
+        if (cellsLimit)
         {
             totalIterations = std::min(totalIterations, cellsLimit);
         }
@@ -81,7 +85,7 @@ int main(int argc, const char **argv)
         auto iterateOverWordsOnce = [&]() {
             for (const auto &word : words)
             {
-                if (diagramm.bindWord(word))
+                if (diagramm_.bindWord(word))
                 {
                     addedWordsCount += 1;
                     if (logger.iterate() >= totalIterations)
@@ -91,19 +95,83 @@ int main(int argc, const char **argv)
                 }
             }
         };
+        iterateOverWordsOnce();
+        iterateOverWordsOnce();
+    }
 
-        iterateOverWordsOnce();
-        iterateOverWordsOnce();
+    std::size_t cellsLimit = 0;
+    bool quiet = false;
+};
+
+struct MergingAlgorithm : DiagrammGeneratingAlgorithm
+{
+    MergingAlgorithm(van_kampen::Graph &graph)
+        : DiagrammGeneratingAlgorithm(graph) {}
+
+    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &) override
+    {
+        throw std::logic_error("not implemented");
+    }
+};
+
+int main(int, const char **)
+{
+    try
+    {
+        ConsoleFlags flags;
+
+        flags.mergingAlgo = false;
+        flags.iterativeAlgo = true;
+        flags.cellsLimit = 10;
+        flags.inputFileName = "../../LangToGroup/out.txt";
+        flags.outputFileName = "out.dot";
+        flags.wordOutputFileName = "word.txt";
+
+        std::ifstream inputFile(flags.inputFileName);
+        if (!inputFile.good())
+        {
+            throw std::invalid_argument("cannot open '" + flags.inputFileName + "'");
+        }
+        std::string text((std::istreambuf_iterator<char>(inputFile)),
+                         std::istreambuf_iterator<char>());
+
+        auto words = van_kampen::GroupRepresentationParser::parse(text);
+        if (!flags.notShuffleGroup)
+        {
+            std::random_shuffle(words.begin(), words.end());
+        }
+
+        van_kampen::Graph graph;
+        std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
+
+        if (flags.iterativeAlgo && flags.mergingAlgo)
+        {
+            throw std::invalid_argument("specify one algorithm");
+        }
+        if (flags.iterativeAlgo)
+        {
+            auto iterative = std::make_unique<IterativeAlgorithm>(graph);
+            iterative->cellsLimit = flags.cellsLimit;
+            iterative->quiet = flags.quiet;
+            algo.reset(iterative.release());
+        }
+        else if (flags.mergingAlgo)
+        {
+            auto merging = std::make_unique<MergingAlgorithm>(graph);
+            algo.reset(merging.release());
+        }
+
+        algo->generate(words);
 
         {
-            std::ofstream wordOutputFile(wordOutputFileName);
+            std::ofstream wordOutputFile(flags.wordOutputFileName);
             if (!wordOutputFile.good())
             {
-                std::cerr << "cannot write to file '" << wordOutputFileName << "'" << std::endl;
+                std::cerr << "cannot write to file '" << flags.wordOutputFileName << "'" << std::endl;
             }
             else
             {
-                auto word = diagramm.getWord();
+                auto word = algo->diagramm().getWord();
                 for (std::size_t i = 0; i < word.size(); ++i)
                 {
                     auto &letter = word[i];
@@ -116,11 +184,11 @@ int main(int argc, const char **argv)
             }
         }
 
-        diagramm.getTerminal()->setLabel("S");
-        std::ofstream outFile(outputFileName);
+        algo->diagramm().getTerminal()->setLabel("S");
+        std::ofstream outFile(flags.outputFileName);
         if (!outFile.good())
         {
-            throw std::invalid_argument("cannot write to file '" + outputFileName + "'");
+            throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
         }
         graph.printSelf(outFile);
     }

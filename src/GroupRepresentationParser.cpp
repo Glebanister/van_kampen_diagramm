@@ -41,6 +41,11 @@ std::vector<std::vector<GroupElement>> GroupRepresentationParser::parse(const st
     auto wordsBegin = text.begin() + text.find("[ ", std::distance(text.begin(), alphabetEnd)) + std::string("[ ").length();
     auto wordsEnd = text.begin() + text.find(" ]", std::distance(text.begin(), wordsBegin));
 
+    if (!(text.begin() <= wordsEnd && wordsEnd <= text.end()))
+    {
+        throw std::invalid_argument("invalid group representation format");
+    }
+
     std::vector<std::vector<van_kampen::GroupElement>> words;
 
     for (auto word : van_kampen::split_by_delim({wordsBegin, wordsEnd}, ", "))
@@ -62,4 +67,4 @@ std::vector<std::vector<GroupElement>> GroupRepresentationParser::parse(const st
 
     return words;
 }
-} // namespace van_kampmen
+} // namespace van_kampen
