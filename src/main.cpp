@@ -116,85 +116,85 @@ struct MergingAlgorithm : DiagrammGeneratingAlgorithm
 
 int main(int, const char **)
 {
-    try
+    // try
+    // {
+    ConsoleFlags flags;
+
+    flags.mergingAlgo = false;
+    flags.iterativeAlgo = true;
+    // flags.cellsLimit = 1000;
+    flags.inputFileName = "../../LangToGroup/out.txt";
+    flags.outputFileName = "out.dot";
+    flags.wordOutputFileName = "word.txt";
+
+    std::ifstream inputFile(flags.inputFileName);
+    if (!inputFile.good())
     {
-        ConsoleFlags flags;
+        throw std::invalid_argument("cannot open '" + flags.inputFileName + "'");
+    }
+    std::string text((std::istreambuf_iterator<char>(inputFile)),
+                     std::istreambuf_iterator<char>());
 
-        flags.mergingAlgo = false;
-        flags.iterativeAlgo = true;
-        flags.cellsLimit = 10;
-        flags.inputFileName = "../../LangToGroup/out.txt";
-        flags.outputFileName = "out.dot";
-        flags.wordOutputFileName = "word.txt";
+    std::vector<std::vector<van_kampen::GroupElement>> words = van_kampen::GroupRepresentationParser::parse(text);
+    if (!flags.notShuffleGroup)
+    {
+        std::random_shuffle(words.begin(), words.end());
+    }
 
-        std::ifstream inputFile(flags.inputFileName);
-        if (!inputFile.good())
+    van_kampen::Graph graph;
+    std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
+
+    if (flags.iterativeAlgo && flags.mergingAlgo)
+    {
+        throw std::invalid_argument("specify one algorithm");
+    }
+    if (flags.iterativeAlgo)
+    {
+        auto iterative = std::make_unique<IterativeAlgorithm>(graph);
+        iterative->cellsLimit = flags.cellsLimit;
+        iterative->quiet = flags.quiet;
+        algo.reset(iterative.release());
+    }
+    else if (flags.mergingAlgo)
+    {
+        auto merging = std::make_unique<MergingAlgorithm>(graph);
+        algo.reset(merging.release());
+    }
+
+    algo->generate(words);
+
+    {
+        std::ofstream wordOutputFile(flags.wordOutputFileName);
+        if (!wordOutputFile.good())
         {
-            throw std::invalid_argument("cannot open '" + flags.inputFileName + "'");
+            std::cerr << "cannot write to file '" << flags.wordOutputFileName << "'" << std::endl;
         }
-        std::string text((std::istreambuf_iterator<char>(inputFile)),
-                         std::istreambuf_iterator<char>());
-
-        auto words = van_kampen::GroupRepresentationParser::parse(text);
-        if (!flags.notShuffleGroup)
+        else
         {
-            std::random_shuffle(words.begin(), words.end());
-        }
-
-        van_kampen::Graph graph;
-        std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
-
-        if (flags.iterativeAlgo && flags.mergingAlgo)
-        {
-            throw std::invalid_argument("specify one algorithm");
-        }
-        if (flags.iterativeAlgo)
-        {
-            auto iterative = std::make_unique<IterativeAlgorithm>(graph);
-            iterative->cellsLimit = flags.cellsLimit;
-            iterative->quiet = flags.quiet;
-            algo.reset(iterative.release());
-        }
-        else if (flags.mergingAlgo)
-        {
-            auto merging = std::make_unique<MergingAlgorithm>(graph);
-            algo.reset(merging.release());
-        }
-
-        algo->generate(words);
-
-        {
-            std::ofstream wordOutputFile(flags.wordOutputFileName);
-            if (!wordOutputFile.good())
+            std::vector<van_kampen::Transition> word = algo->diagramm().getCircuit();
+            for (std::size_t i = 0; i < word.size(); ++i)
             {
-                std::cerr << "cannot write to file '" << flags.wordOutputFileName << "'" << std::endl;
-            }
-            else
-            {
-                auto word = algo->diagramm().getWord();
-                for (std::size_t i = 0; i < word.size(); ++i)
+                auto &letter = word[i];
+                wordOutputFile << letter.label.name << (letter.label.reversed ? "^(-1)" : "");
+                if (i < word.size() - 1)
                 {
-                    auto &letter = word[i];
-                    wordOutputFile << letter.second.name << (letter.second.reversed ? "^(-1)" : "");
-                    if (i < word.size() - 1)
-                    {
-                        wordOutputFile << "*";
-                    }
+                    wordOutputFile << "*";
                 }
             }
         }
+    }
 
-        algo->diagramm().getTerminal()->setLabel("S");
-        std::ofstream outFile(flags.outputFileName);
-        if (!outFile.good())
-        {
-            throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
-        }
-        graph.printSelf(outFile);
-    }
-    catch (const std::exception &e)
+    graph.node(algo->diagramm().getTerminal()).setDiagramLabel("S");
+    std::ofstream outFile(flags.outputFileName);
+    if (!outFile.good())
     {
-        std::cerr << e.what() << '\n';
-        return 0;
+        throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
     }
+    graph.printSelf(outFile);
+    // }
+    // catch (const std::exception &e)
+    // {
+    //     std::cerr << e.what() << '\n';
+    //     return 0;
+    // }
 }

@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <iostream>
 
 #include "VanKampenUtils.hpp"
 
@@ -29,10 +30,6 @@ std::size_t ProcessLogger::iterate()
         lastResult = percent;
         log((percent < 10 ? " " : ""), percent, "%    ");
     }
-    // if (currentIt_ == total_)
-    // {
-    //     log("finished  ");
-    // }
     return currentIt_;
 }
 

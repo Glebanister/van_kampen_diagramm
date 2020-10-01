@@ -3,7 +3,7 @@ project(vankamp-vis
         LANGUAGES CXX
         VERSION 1.0.0)
 
-add_compile_options(-Wall -Wextra -Wshadow)
+add_compile_options(-Wall -Wextra -Wshadow -Wpedantic)
 
 set(EXE
     ${CMAKE_PROJECT_NAME}

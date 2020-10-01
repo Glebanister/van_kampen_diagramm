@@ -5,8 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <unordered_set>
-#include <vector>
+#include <deque>
 
 #include "Group.hpp"
 
@@ -23,77 +22,60 @@ namespace van_kampen
     }
     // Van Kanpmen graph
     class Graph;
+    using nodeId_t = int;
+    struct Transition;
 
     // Van Kanpmen graph node
     class Node
     {
     public:
-        class reverse_iterator
-        {
-        public:
-            bool isValid() const noexcept;
-            void validate() const;
-            reverse_iterator &operator++() noexcept;
-            reverse_iterator &operator--() noexcept;
-            reverse_iterator &operator+=(std::size_t i) noexcept;
-            reverse_iterator &operator-=(std::size_t i) noexcept;
-            bool operator>(reverse_iterator &other);
-            bool operator<(reverse_iterator &other);
-            bool operator==(reverse_iterator &other);
-            bool operator!=(reverse_iterator &other);
-            std::pair<std::shared_ptr<Node>, GroupElement> operator*() noexcept;
-
-        private:
-            friend class Node;
-            explicit reverse_iterator(Node &node, std::size_t id = 0);
-            Node *node_;
-            int lastTransitionId_;
-        };
-
-        Node(Graph &graph);
-
         // Add transition to existing node with label
-        void addTransition(std::weak_ptr<Node> to, const GroupElement &label);
+        void addTransition(nodeId_t to, const GroupElement &label);
 
         void swapLastAdditions();
 
         // Add transition to new node
-        std::weak_ptr<Node> addTransitionToNewNode(const GroupElement &label);
+        nodeId_t addTransitionToNewNode(const GroupElement &label);
 
         // Highlight node on diagramm
         void highlightNode(bool) noexcept;
 
-        reverse_iterator begin() noexcept;
-        reverse_iterator end() noexcept;
+        nodeId_t getId() const noexcept;
 
-        std::size_t getId() const noexcept;
+        void setDiagramLabel(const std::string &);
+        void setDiagramComment(const std::string &);
+        void setDiagramLabel(std::string &&);
+        void setDiagramComment(std::string &&);
 
-        void setLabel(const std::string &);
-        void setComment(const std::string &);
+        const std::deque<Transition> &transitions() const;
+
+        static nodeId_t makeNonexistantNode() noexcept;
+        static bool isNonexistantNode(nodeId_t) noexcept;
 
     private:
-        friend class Graph;
+        Node(Graph &graph);
         // Print this node and all outgoing transitions
-        void printSelfAndTransitions(std::ostream &os, std::unordered_map<std::size_t, bool> &printed);
+        void printSelfAndTransitions(std::ostream &os) const;
 
-        std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> notOwnedTransitions_;
-        std::vector<std::pair<std::shared_ptr<Node>, GroupElement>> ownedTransitions_;
-        std::vector<std::pair<bool, std::size_t>> iThAddedTransitionData_; // [is_owned, id in its array]
+        std::deque<Transition> transitions_;
         bool isHighlighted_ = false;
-        std::size_t id_;
         Graph &graph_;
+        const nodeId_t id_;
         std::string label_ = "";
         std::string comment_ = "";
+
+        friend class Graph;
     };
 
     class Graph
     {
     public:
-        void addNode(std::weak_ptr<Node> node);
-
+        nodeId_t addNode();
         void printSelf(std::ostream &os);
+        const std::deque<Node> &nodes() const;
+        Node &node(nodeId_t it);
 
     private:
-        std::vector<std::weak_ptr<Node>> nodes_;
+        std::deque<Node> nodes_;
     };
-} // namespace van_kampmen
+} // namespace van_kampen

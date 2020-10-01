@@ -2,177 +2,62 @@
 
 namespace van_kampen
 {
-bool Node::reverse_iterator::isValid() const noexcept
+Node::Node(Graph &g)
+    : graph_(g), id_(g.nodes().size()) {}
+
+void Node::addTransition(nodeId_t to, const GroupElement &label)
 {
-    if (!node_)
-    {
-        return false;
-    }
-    return 0 <= lastTransitionId_ &&
-           static_cast<std::size_t>(lastTransitionId_) < node_->notOwnedTransitions_.size() + node_->ownedTransitions_.size();
+    transitions_.emplace_back(to, label);
 }
 
-void Node::reverse_iterator::validate() const
+nodeId_t Node::addTransitionToNewNode(const GroupElement &label)
 {
-    if (!isValid())
-    {
-        throw std::length_error("bad node iterator access");
-    }
-}
-
-Node::reverse_iterator &Node::reverse_iterator::operator++() noexcept
-{
-    ++lastTransitionId_;
-    return *this;
-}
-
-Node::reverse_iterator &Node::reverse_iterator::operator--() noexcept
-{
-    ++lastTransitionId_;
-    return *this;
-}
-
-Node::reverse_iterator &Node::reverse_iterator::operator+=(std::size_t i) noexcept
-{
-
-    lastTransitionId_ += i;
-    return *this;
-}
-
-Node::reverse_iterator &Node::reverse_iterator::operator-=(std::size_t i) noexcept
-{
-    lastTransitionId_ -= i;
-    return *this;
-}
-
-bool Node::reverse_iterator::operator>(reverse_iterator &other)
-{
-    return lastTransitionId_ < other.lastTransitionId_;
-}
-
-bool Node::reverse_iterator::operator<(Node::reverse_iterator &other)
-{
-    return lastTransitionId_ > other.lastTransitionId_;
-}
-
-bool Node::reverse_iterator::operator==(Node::reverse_iterator &other)
-{
-    return lastTransitionId_ == other.lastTransitionId_;
-}
-
-bool Node::reverse_iterator::operator!=(Node::reverse_iterator &other)
-{
-    return lastTransitionId_ != other.lastTransitionId_;
-}
-
-std::pair<std::shared_ptr<Node>, GroupElement> Node::reverse_iterator::operator*() noexcept
-{
-    validate();
-    auto iThTransitionData = node_->iThAddedTransitionData_[node_->iThAddedTransitionData_.size() - lastTransitionId_ - 1];
-    if (iThTransitionData.first)
-    {
-        return node_->ownedTransitions_[iThTransitionData.second];
-    }
-    else
-    {
-        auto [node, label] = node_->notOwnedTransitions_[iThTransitionData.second];
-        return {node.lock(), label};
-    }
-}
-
-Node::reverse_iterator::reverse_iterator(Node &node, std::size_t id)
-    : node_(&node), lastTransitionId_(id) {}
-
-Node::Node(Graph &graph)
-    : graph_(graph)
-{
-    static std::size_t cnt{0};
-    id_ = ++cnt;
-}
-
-void Node::addTransition(std::weak_ptr<Node> to, const GroupElement &label)
-{
-    iThAddedTransitionData_.emplace_back(false, notOwnedTransitions_.size());
-    notOwnedTransitions_.emplace_back(std::move(to), label);
-    graph_.addNode(notOwnedTransitions_.back().first.lock());
+    nodeId_t node = graph_.addNode();
+    addTransition(node, label);
+    return node;
 }
 
 void Node::swapLastAdditions()
 {
-    if (iThAddedTransitionData_.size() < 2)
+    if (transitions_.size() < 2)
     {
         throw std::length_error("unable to swap last two");
     }
-    auto &last = iThAddedTransitionData_.back();
-    auto &prevLast = iThAddedTransitionData_[iThAddedTransitionData_.size() - 2];
-    std::swap(last, prevLast);
+    std::swap(transitions_[transitions_.size() - 2], transitions_[transitions_.size() - 1]);
 }
 
-std::weak_ptr<Node> Node::addTransitionToNewNode(const GroupElement &label)
-{
-    iThAddedTransitionData_.emplace_back(true, ownedTransitions_.size());
-    auto newNode = std::make_shared<Node>(graph_);
-    graph_.addNode(newNode);
-    return ownedTransitions_.emplace_back(std::move(newNode), label).first;
-}
-
-void Node::highlightNode(bool value) noexcept
-{
-    isHighlighted_ = value;
-}
-
-Node::reverse_iterator Node::begin() noexcept
-{
-    return reverse_iterator(*this, 0);
-}
-
-Node::reverse_iterator Node::end() noexcept
-{
-    return Node::reverse_iterator(*this, iThAddedTransitionData_.size());
-}
-
-std::size_t Node::getId() const noexcept
-{
-    return id_;
-}
-
-void Node::setLabel(const std::string &label)
-{
-    label_ = label;
-}
-
-void Node::setComment(const std::string &comment)
-{
-    comment_ = comment;
-}
+void Node::highlightNode(bool value) noexcept { isHighlighted_ = value; }
+nodeId_t Node::getId() const noexcept { return id_; }
+void Node::setDiagramLabel(const std::string &label) { label_ = label; }
+void Node::setDiagramComment(const std::string &comment) { comment_ = comment; }
+void Node::setDiagramLabel(std::string &&label) { label_ = std::move(label); }
+void Node::setDiagramComment(std::string &&comment) { comment_ = std::move(comment); }
+const std::deque<Transition> &Node::transitions() const { return transitions_; }
+nodeId_t Node::makeNonexistantNode() noexcept { return -1; }
+bool Node::isNonexistantNode(nodeId_t id) noexcept { return id == -1; }
 
 // Print this node and all outgoing transitions
-void Node::printSelfAndTransitions(std::ostream &os, std::unordered_map<std::size_t, bool> &printed)
+void Node::printSelfAndTransitions(std::ostream &os) const
 {
     std::string shape = isHighlighted_ ? "circle" : "point";
     std::string label = !label_.empty() ? ",label=" + label_ : "";
     std::string comment = !comment_.empty() ? ",xlabel=\"" + comment_ + "\"" : "";
     print(os, id_, "[shape=", shape, label, comment, "];\n");
-    printed[id_] = true;
-    auto printTransition = [&](std::size_t &id, const GroupElement &elem) {
-        if (!elem.reversed)
+    for (const auto &[nodeToId, transitionLabel] : transitions_)
+    {
+        if (transitionLabel.reversed)
         {
-            print(os, id_, "->", id, " [label=\"", elem.name, "\"];\n");
+            continue;
         }
-    };
-    for (const auto &[tr, element] : notOwnedTransitions_)
-    {
-        printTransition(tr.lock()->id_, element);
-    }
-    for (const auto &[tr, element] : ownedTransitions_)
-    {
-        printTransition(tr->id_, element);
+        const Node &nodeTo = graph_.nodes().at(nodeToId);
+        print(os, id_, "->", nodeTo.getId(), " [label=\"", transitionLabel.name, "\"];\n");
     }
 }
 
-void Graph::addNode(std::weak_ptr<Node> node)
+nodeId_t Graph::addNode()
 {
-    nodes_.emplace_back(std::move(node));
+    nodes_.push_back(Node{*this});
+    return nodes_.back().getId();
 }
 
 void Graph::printSelf(std::ostream &os)
@@ -180,19 +65,22 @@ void Graph::printSelf(std::ostream &os)
     os << "digraph G {\n"
           "rankdir=LR;\n";
 
-    std::unordered_map<std::size_t, bool> printed;
     for (const auto &node : nodes_)
     {
-        if (node.expired())
-        {
-            throw std::bad_weak_ptr();
-        }
-        if (!printed[node.lock()->getId()])
-        {
-            node.lock()->printSelfAndTransitions(os, printed);
-        }
+        node.printSelfAndTransitions(os);
     }
 
     os << "}\n";
+    os.flush();
 }
-} // namespace van_kampmen
+
+Node &Graph::node(nodeId_t it)
+{
+    return nodes_.at(it);
+}
+
+const std::deque<Node> &Graph::nodes() const
+{
+    return nodes_;
+}
+} // namespace van_kampen

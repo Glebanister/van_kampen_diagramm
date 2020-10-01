@@ -6,6 +6,8 @@ namespace van_kampen
 {
     class Graph;
     class Node;
+    struct Transition;
+    using nodeId_t = int;
 
     class GroupElement
     {
@@ -14,11 +16,20 @@ namespace van_kampen
         bool reversed = false;
 
         bool operator==(const GroupElement &other) const;
-
         bool isOpposite(const GroupElement &other);
 
         GroupElement inversed() const;
         void inverse() noexcept;
+    };
+
+    using nodeId_t = int;
+
+    struct Transition
+    {
+        nodeId_t to;
+        GroupElement label;
+
+        Transition(nodeId_t to, const GroupElement &elem);
     };
 
     class Diagramm
@@ -26,14 +37,13 @@ namespace van_kampen
     public:
         Diagramm(Graph &graph);
 
-        std::vector<std::pair<std::weak_ptr<Node>, GroupElement>> getWord();
+        std::vector<Transition> getCircuit();
         bool bindWord(const std::vector<GroupElement> &word);
         void shuffleTerminal();
-        std::shared_ptr<Node> getTerminal() const noexcept;
+        nodeId_t getTerminal() const noexcept;
 
     private:
-        std::shared_ptr<Node> terminal_ = nullptr;
+        nodeId_t terminal_ = -1;
         Graph &graph_;
-        std::shared_ptr<Node> firstNode_ = nullptr;
     };
 } // namespace van_kampen

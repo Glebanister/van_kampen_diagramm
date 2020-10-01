@@ -27,7 +27,8 @@ namespace van_kampen
             }
             os_ << '\r';
             os_ << processName_ << ": ";
-            (os_ << ' ' << ... << args);
+            (os_ << ... << args);
+            os_.flush();
         }
 
         std::size_t total_;
