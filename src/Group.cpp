@@ -57,39 +57,30 @@ std::vector<Transition> Diagramm::getCircuit()
     return result;
 }
 
-void Diagramm::shuffleTerminal()
-{
-    auto nextBigWord = getCircuit();
-    if (nextBigWord.size() == 0)
-    {
-        return;
-    }
-    graph_.node(terminal_).highlightNode(false);
-    if (nextBigWord.size() > 1)
-    {
-        terminal_ = nextBigWord[1].to;
-    }
-    graph_.node(terminal_).highlightNode(true);
-}
-
 nodeId_t Diagramm::getTerminal() const noexcept { return terminal_; }
+void Diagramm::setTerminal(nodeId_t n) noexcept { terminal_ = n; }
 
 bool Diagramm::bindWord(const std::vector<GroupElement> &word)
 {
     class TerminalShuffler
     {
     public:
-        TerminalShuffler(Diagramm &dg)
-            : diagramm(dg) {}
+        TerminalShuffler(Diagramm &dg, Graph &g)
+            : diagramm(dg), graph(g) {}
 
         ~TerminalShuffler()
         {
-            diagramm.shuffleTerminal();
+            if (Node::isNonexistantNode(diagramm.getTerminal()))
+            {
+                return;
+            }
+            diagramm.setTerminal(graph.node(diagramm.getTerminal()).transitions().back().to);
         }
 
     private:
         Diagramm &diagramm;
-    } shuffler(*this);
+        Graph &graph;
+    } shuffler(*this, graph_);
 
     std::vector<Transition> circleWord = getCircuit();
     if (circleWord.empty())

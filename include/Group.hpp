@@ -39,8 +39,8 @@ namespace van_kampen
 
         std::vector<Transition> getCircuit();
         bool bindWord(const std::vector<GroupElement> &word);
-        void shuffleTerminal();
         nodeId_t getTerminal() const noexcept;
+        void setTerminal(nodeId_t) noexcept;
 
     private:
         nodeId_t terminal_ = -1;
