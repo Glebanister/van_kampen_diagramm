@@ -24,8 +24,8 @@ struct ConsoleFlags
             "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
             "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
             "l,limit", "Set cells limit", cxxopts::value(cellsLimit), "integer")(
-            "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo), "-")(
-            "merging", "Build diagramm with iterative algorithm", cxxopts::value(mergingAlgo), "-")(
+            "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo)->default_value("true"))(
+            "merging", "Build diagramm with merging algorithm", cxxopts::value(mergingAlgo))(
             "h,help", "Print usage");
 
         auto result = options.parse(argc, argv);
@@ -119,7 +119,6 @@ int main(int argc, const char **argv)
     try
     {
         ConsoleFlags flags(argc, argv);
-
         std::ifstream inputFile(flags.inputFileName);
         if (!inputFile.good())
         {
