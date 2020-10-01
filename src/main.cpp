@@ -114,18 +114,11 @@ struct MergingAlgorithm : DiagrammGeneratingAlgorithm
     }
 };
 
-int main(int, const char **)
+int main(int argc, const char **argv)
 {
     try
     {
-        ConsoleFlags flags;
-
-        flags.mergingAlgo = false;
-        flags.iterativeAlgo = true;
-        flags.cellsLimit = 10;
-        flags.inputFileName = "../../LangToGroup/out.txt";
-        flags.outputFileName = "out.dot";
-        flags.wordOutputFileName = "word.txt";
+        ConsoleFlags flags(argc, argv);
 
         std::ifstream inputFile(flags.inputFileName);
         if (!inputFile.good())
