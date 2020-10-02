@@ -17,9 +17,9 @@ struct ConsoleFlags
     {
         cxxopts::Options options("vankamp-vis", "Van Kampen diagram visualisation tool");
         options.add_options()(
-            "i,input", "Specify input file", cxxopts::value(inputFileName), "required")(
-            // "f,format", "Set file format", cxxopts::value(outputFileFormat)->default_value("dot"), "")(
-            "o,output", "Specify output file", cxxopts::value(outputFileName)->default_value("vankamp-vis-out.dot"), "")(
+            "i,input", "Specify input file", cxxopts::value(inputFileName), "(required)")(
+            "f,format", "Set file format", cxxopts::value(outputFormatString)->default_value("dot"), "(dot, nb)")(
+            "o,output", "Specify output filename without exestention", cxxopts::value(outputFileName)->default_value("vankamp-vis-out"), "")(
             "c,cycle-output", "Set boundary cycle output file", cxxopts::value(wordOutputFileName)->default_value("vankamp-vis-cycle.txt"), "")(
             "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
             "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
@@ -40,6 +40,19 @@ struct ConsoleFlags
             throw cxxopts::option_required_exception("input");
         }
         hasCellsLimit = result.count("limit");
+
+        std::unordered_map<std::string, van_kampen::graphOutputFormat> formatByString = {
+            {"dot", van_kampen::graphOutputFormat::DOT},
+            {"nb", van_kampen::graphOutputFormat::WOLFRAM_NOTEBOOK},
+        };
+
+        outputFormat = formatByString[outputFormatString];
+        if (!static_cast<int>(outputFormat))
+        {
+            throw std::invalid_argument("Undefined format: " + outputFormatString);
+        }
+
+        outputFileName += std::string(".") + outputFormatString;
     }
 
     std::string inputFileName, outputFileName, wordOutputFileName;
@@ -49,6 +62,8 @@ struct ConsoleFlags
     bool hasCellsLimit = false;
     bool iterativeAlgo = true;
     bool mergingAlgo = false;
+    std::string outputFormatString = "dot";
+    van_kampen::graphOutputFormat outputFormat;
 };
 
 struct DiagrammGeneratingAlgorithm
@@ -182,7 +197,7 @@ int main(int argc, const char **argv)
         {
             throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
         }
-        graph.printSelf(outFile);
+        graph.printSelf(outFile, flags.outputFormat);
     }
     catch (const std::exception &e)
     {

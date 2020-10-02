@@ -11,6 +11,13 @@
 
 namespace van_kampen
 {
+    enum class graphOutputFormat
+    {
+        UNDEFINED,
+        DOT,
+        WOLFRAM_NOTEBOOK,
+    };
+
     class GroupElement;
     class Diagramm;
 
@@ -55,7 +62,8 @@ namespace van_kampen
     private:
         Node(Graph &graph);
         // Print this node and all outgoing transitions
-        void printSelfAndTransitions(std::ostream &os) const;
+
+        void printSelfAndTransitions(std::ostream &os, graphOutputFormat, bool last) const;
 
         std::deque<Transition> transitions_;
         bool isHighlighted_ = false;
@@ -71,7 +79,7 @@ namespace van_kampen
     {
     public:
         nodeId_t addNode();
-        void printSelf(std::ostream &os);
+        void printSelf(std::ostream &os, graphOutputFormat);
         const std::deque<Node> &nodes() const;
         Node &node(nodeId_t it);
 

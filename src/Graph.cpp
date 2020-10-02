@@ -37,20 +37,48 @@ nodeId_t Node::makeNonexistantNode() noexcept { return -1; }
 bool Node::isNonexistantNode(nodeId_t id) noexcept { return id == -1; }
 
 // Print this node and all outgoing transitions
-void Node::printSelfAndTransitions(std::ostream &os) const
+void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool last) const
 {
-    std::string shape = isHighlighted_ ? "circle" : "point";
-    std::string label = !label_.empty() ? ",label=" + label_ : "";
-    std::string comment = !comment_.empty() ? ",xlabel=\"" + comment_ + "\"" : "";
-    print(os, id_, "[shape=", shape, label, comment, "];\n");
+    switch (fmt)
+    {
+    case graphOutputFormat::DOT:
+    {
+        std::string shape = isHighlighted_ ? "circle" : "point";
+        std::string label = !label_.empty() ? ",label=" + label_ : "";
+        std::string comment = !comment_.empty() ? ",xlabel=\"" + comment_ + "\"" : "";
+        print(os, id_, "[shape=", shape, label, comment, "];\n");
+        break;
+    }
+
+    case graphOutputFormat::WOLFRAM_NOTEBOOK:
+        break;
+
+    default:
+        break;
+    }
+
+    std::size_t nonReservedCount = std::count_if(transitions_.begin(), transitions_.end(), [](const Transition &tr) { return !tr.label.reversed; });
+
     for (const auto &[nodeToId, transitionLabel] : transitions_)
     {
         if (transitionLabel.reversed)
         {
             continue;
         }
+        --nonReservedCount;
         const Node &nodeTo = graph_.nodes().at(nodeToId);
-        print(os, id_, "->", nodeTo.getId(), " [label=\"", transitionLabel.name, "\"];\n");
+        switch (fmt)
+        {
+        case graphOutputFormat::DOT:
+            print(os, id_, "->", nodeTo.getId(), " [label=\"", transitionLabel.name, "\"];\n");
+            break;
+
+        case graphOutputFormat::WOLFRAM_NOTEBOOK:
+            print(os, '{', id_, ", ", nodeTo.getId(), '}', ((last && !nonReservedCount) ? "" : ", "));
+
+        default:
+            break;
+        }
     }
 }
 
@@ -60,17 +88,40 @@ nodeId_t Graph::addNode()
     return nodes_.back().getId();
 }
 
-void Graph::printSelf(std::ostream &os)
+void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
 {
-    os << "digraph G {\n"
-          "rankdir=LR;\n";
-
-    for (const auto &node : nodes_)
+    switch (fmt)
     {
-        node.printSelfAndTransitions(os);
+    case graphOutputFormat::DOT:
+        os << "digraph G {\n"
+              "rankdir=LR;\n";
+        break;
+    case graphOutputFormat::WOLFRAM_NOTEBOOK:
+        os << "Graph[Rule @@@ {";
+        break;
+
+    default:
+        break;
     }
 
-    os << "}\n";
+    for (std::size_t i = 0; i < nodes_.size(); ++i)
+    {
+        nodes_[i].printSelfAndTransitions(os, fmt, i == nodes_.size() - 1);
+    }
+
+    switch (fmt)
+    {
+    case graphOutputFormat::DOT:
+        os << "}\n";
+        break;
+
+    case graphOutputFormat::WOLFRAM_NOTEBOOK:
+        os << "}, GraphLayout -> \"PlanarEmbedding\"]\n";
+        break;
+
+    default:
+        break;
+    }
     os.flush();
 }
 
