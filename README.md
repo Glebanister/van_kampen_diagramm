@@ -39,11 +39,14 @@ format.
 |        Option        | Param                                                              | Argument type |
 |:--------------------:|:-------------------------------------------------------------------|---------------|
 |    `-i, --input`     | Specify input file                                                 | string        |
+|    `-f, --format`    | Set file format `dot` for graphviz, `nb` for wolfram mathematica   | dot/nb        |
 |    `-o, --output`    | Specify custom output file (default:  vankamp-vis-out)             | string        |
 | `-c, --cycle-output` | Set boundary cycle output file (default:    vankamp-vis-cycle.txt) | string        |
 |  `-n, --no-shuffle`  | Do not shuffle representation before generation                    | -             |
 |    `-q, --quiet`     | Do not log status to console                                       | -             |
 |    `-l, --limit`     | Set cells limit                                                    | integer       |
+|    `--iterative`     | Build diagramm with iterative algorithm (default:  true)           | -             |
+|     `--merging`      | Build diagramm with merging algorithm                              | -             |
 |     `-h, --help`     | Print usage                                                        | -             |
 
 Group representation format example:
