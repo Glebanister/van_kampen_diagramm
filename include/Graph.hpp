@@ -16,6 +16,7 @@ namespace van_kampen
         UNDEFINED,
         DOT,
         WOLFRAM_NOTEBOOK,
+        TXT_EDGES,
     };
 
     class GroupElement;
