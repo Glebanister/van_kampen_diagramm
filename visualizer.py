@@ -427,6 +427,20 @@ def get_planar_graph_cells(graph: nx.Graph, nodes: Set[int], edges: List[Tuple[i
     return cells
 
 
+def dist_from_center(graph_info: GraphInformation) -> List[float]:
+    avg = np.zeros(shape=(2,))
+    cnt = 0
+    for node in graph_info.graph.nodes():
+        cnt += 1
+        avg += graph_info.planar_layout[node]
+    avg /= cnt
+    distances = [0 for i in range(cnt)]
+    for node in graph_info.graph.nodes():
+        dist = segment_len(avg, graph_info.planar_layout[node])
+        distances[node] = dist
+    return distances
+
+
 def main(argv: List[str]) -> None:
 
     parser = argparse.ArgumentParser(
@@ -458,55 +472,41 @@ def main(argv: List[str]) -> None:
 
     graph_info = GraphInformation(
         planar_layout=planar_layout,
-        minimal_edge=0.1,
-        maximal_edge=0.5,
-        edges=edges
+        minimal_edge=len(cells) / 70.0,
+        maximal_edge=len(cells) / 50.0,
+        edges=edges,
+        graph=graph
     )
     penny = PennyCalculatorVertexMutator(
         [
-            (cell_edge_diff_penny, 2.0),
-            (cell_edge_min_len_penny, 2.0),
-            (cell_edge_max_len_penny, 3.0),
-            (cell_diameter_penny, 2.0),
-            (cell_convexity_penny, 1.0),
+            (cell_edge_diff_penny, 3.5),
+            (cell_edge_min_len_penny, 3.0),
+            (cell_edge_max_len_penny, 1.0),
+            (cell_diameter_penny, 1.7),
+            (cell_convexity_penny, 1.1),
         ],
         [
-            (planarity_penny_edge, 1000.0),
+            (planarity_penny_edge, 100.0),
         ],
         cells,
         graph_info,
     )
 
-    nodes_list = list(nodes)
-    iterations = 10
+    iterations = 1
     cnt = 0
 
+    sum_time = 0.0
     for _ in range(iterations):
-        shuffle(nodes_list)
+        dists = dist_from_center(graph_info)
+        nodes_list = list(nodes)
+        nodes_list.sort(key=lambda v: dists[v], reverse=True)
         for node in nodes_list:
+            start_time = time.time()
             penny.set_current_mutation(node)
             plt.show()
             cnt += 1
-            print("\rDone: {:.2f}".format(
-                100 * cnt / (iterations * len(nodes_list))), end=' %')
-
             prev_node_pos = penny.graph_info.planar_layout[node][:]
-
-            initial = np.zeros(shape=(2,))
-            neigs = 0
-            for neig in graph.neighbors(node):
-                initial += graph_info.planar_layout[neig]
-                neigs += 1
-            initial /= neigs
-
-            nodes_sum = np.zeros(shape=(2,))
-            for v in nodes_list:
-                nodes_sum += penny.graph_info.planar_layout[v]
-            nodes_sum /= len(penny.graph_info.planar_layout)
-
-            from_center_to_cur = (initial - nodes_sum) / 100.0
-            initial += from_center_to_cur
-
+            initial = np.array(penny.graph_info.planar_layout[node])
             penny.graph_info.planar_layout[node] = initial
 
             result = minimize(
@@ -524,6 +524,17 @@ def main(argv: List[str]) -> None:
                 penny.graph_info.planar_layout[node] = prev_node_pos
             else:
                 penny.graph_info.planar_layout[node] = result.x
+
+            sum_time += time.time() - start_time
+            cur_avg = sum_time / cnt
+
+            total_iterations = iterations * len(nodes)
+            seconds = cur_avg * (total_iterations - cnt)
+            minutes = seconds // 60
+            seconds %= 60
+            print("\rDone: {:.2f} % Time left: {:.0f}:{:.0f}  ".format(
+                100 * cnt / total_iterations,
+                minutes, seconds), end='')
 
     nx.draw(graph,
             pos=penny.graph_info.planar_layout,
