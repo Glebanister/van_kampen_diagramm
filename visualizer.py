@@ -45,19 +45,22 @@ class GraphInformation:
                  planar_layout: Dict[int, Point],
                  minimal_edge: float,
                  maximal_edge: float,
-                 edges: List[Tuple[int, int]]):
+                 edges: List[Tuple[int, int]],
+                 graph: nx.Graph):
         '''
         Initializes GraphInformation
         planar_layout - planar graph nodes coordinates
         minimal_edge - minimal acceptable edge
         maximal_edge - maximal acceptable edge
         edges - list of graph edges
+        graph - graph
         '''
         self.minimal_edge = minimal_edge
         self.maximal_edge = maximal_edge
         self.planar_layout = planar_layout
         self.max_edge = 0
         self.edges = edges
+        self.graph = graph
         for f, t in edges:
             self.max_edge = max(self.max_edge, segment_len(
                 planar_layout[f], planar_layout[t]))
@@ -302,6 +305,63 @@ class PennyCalculatorVertexMutator:
         return total
 
 
+class PennyCalculatorCellMutator:
+    '''
+    Penny calculator if single cell is being mutated
+    '''
+
+    def __init__(self,
+                 cell_pennies: List[Tuple[Callable[[List[Tuple[int, int]], GraphInformation], float], float]],
+                 edge_pennies: List[Tuple[Callable[[int, int, GraphInformation], float], float]],
+                 cells: List[List[Tuple[int, int]]],
+                 info: GraphInformation):
+        '''
+        cell_pennies: list of [per-cell penny function, weigth of penny]
+        edge_pennies: list of [edge penny function, weigth of penny]
+        cells: list of graph cells
+        info: graph information
+        '''
+        self.cell_pennies = cell_pennies
+        self.edge_pennies = edge_pennies
+        self.cells = cells
+        self.graph_info = info
+        self.current_mutated: List[int] = []
+        self.adj_edges: List[Tuple[int, int]] = []
+
+    def set_current_mutation(self, cell_to_mutate: List[int]) -> None:
+        '''
+        Sets current mutated cell
+        '''
+        self.current_mutated = cell_to_mutate
+        self.adj_edges.clear()
+        for node in self.current_mutated:
+            for neig in self.graph_info.graph.neighbors(node):
+                self.adj_edges.append(sorted((node, neig)))
+        self.adj_edges = list(set(self.adj_edges))
+
+    def __call__(self, unrolled_layout: np.array) -> float:
+        '''
+        Calculates total penny for given mutated cell nodes positions
+        '''
+        total: float = 0.0
+
+        for i in range(len(self.current_mutated)):
+            self.graph_info.planar_layout[self.current_mutated[i]] = np.array(
+                [unrolled_layout[i * 2], unrolled_layout[i * 2]])
+
+        for penny, coef in self.cell_pennies:
+            for cell in self.cells:
+                total += penny(cell, self.graph_info) / len(self.cells)
+
+        for penny, coef in self.edge_pennies:
+            for edge in self.adj_edges:
+                total += penny(edge[0],
+                               edge[1],
+                               self.graph_info) / len(self.adj_edges)
+
+        return total
+
+
 def get_planar_graph_cells(graph: nx.Graph, nodes: Set[int], edges: List[Tuple[int, int]], planar_layout: Dict[int, np.array]) -> List[List[int]]:
     '''
     Returns list of planar graph cells
@@ -395,15 +455,20 @@ def main(argv: List[str]) -> None:
 
     planar_layout = nx.planar_layout(graph)
     cells = get_planar_graph_cells(graph, nodes, edges, planar_layout)
-    graph_info = GraphInformation(planar_layout, 0.5, 2, edges)
 
+    graph_info = GraphInformation(
+        planar_layout=planar_layout,
+        minimal_edge=0.1,
+        maximal_edge=0.5,
+        edges=edges
+    )
     penny = PennyCalculatorVertexMutator(
         [
             (cell_edge_diff_penny, 2.0),
             (cell_edge_min_len_penny, 2.0),
             (cell_edge_max_len_penny, 3.0),
             (cell_diameter_penny, 2.0),
-            (cell_convexity_penny, 4.0),
+            (cell_convexity_penny, 1.0),
         ],
         [
             (planarity_penny_edge, 1000.0),
@@ -460,12 +525,12 @@ def main(argv: List[str]) -> None:
             else:
                 penny.graph_info.planar_layout[node] = result.x
 
-        nx.draw(graph,
-                pos=penny.graph_info.planar_layout,
-                width=1,
-                node_size=5)
-        # plt.savefig('out.svg')
-        plt.show()
+    nx.draw(graph,
+            pos=penny.graph_info.planar_layout,
+            width=1,
+            node_size=5)
+    # plt.savefig('out.svg')
+    plt.show()
 
     print()
 
