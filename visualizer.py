@@ -44,14 +44,17 @@ class GraphInformation:
     def __init__(self,
                  planar_layout: Dict[int, Point],
                  minimal_edge: float,
+                 maximal_edge: float,
                  edges: List[Tuple[int, int]]):
         '''
         Initializes GraphInformation
         planar_layout - planar graph nodes coordinates
         minimal_edge - minimal acceptable edge
+        maximal_edge - maximal acceptable edge
         edges - list of graph edges
         '''
         self.minimal_edge = minimal_edge
+        self.maximal_edge = maximal_edge
         self.planar_layout = planar_layout
         self.max_edge = 0
         self.edges = edges
@@ -70,6 +73,18 @@ def cell_edge_min_len_penny(cell: List[Tuple[int, int]], info: GraphInformation)
         min_len = min(min_len, segment_len(
             info.planar_layout[f], info.planar_layout[t]))
     return (info.minimal_edge - min_len) / info.minimal_edge if min_len < info.minimal_edge else 0
+
+
+def cell_edge_max_len_penny(cell: List[Tuple[int, int]], info: GraphInformation) -> float:
+    '''
+    Returns float value in range [0; 1]
+    Penalizes graph cell for very long edges
+    '''
+    max_len = 0
+    for f, t in cell:
+        max_len = max(max_len, segment_len(
+            info.planar_layout[f], info.planar_layout[t]))
+    return (max_len - info.maximal_edge) / info.max_edge if max_len > info.maximal_edge else 0
 
 
 def cell_edge_diff_penny(cell: List[Tuple[int, int]], info: GraphInformation) -> float:
@@ -123,21 +138,27 @@ def cell_diameter_penny(cell: List[Tuple[int, int]], info: GraphInformation) -> 
     Returns float value in range [0; 1]
     Penalizes graph cell for large ratio of maximum coordinates
     '''
-    minx = info.planar_layout[cell[0][0]][0]
-    miny = info.planar_layout[cell[0][0]][1]
-    maxx = info.planar_layout[cell[0][0]][0]
-    maxy = info.planar_layout[cell[0][0]][1]
+
+    cell_mass_centre = np.zeros(shape=(2,))
 
     for _, to in cell:
-        minx = min(minx, info.planar_layout[to][0])
-        maxx = max(maxx, info.planar_layout[to][0])
-        miny = min(miny, info.planar_layout[to][1])
-        maxy = max(maxy, info.planar_layout[to][1])
+        x = info.planar_layout[to][0]
+        y = info.planar_layout[to][1]
+        cell_mass_centre += np.array([x, y])
 
-    dx = maxx - minx
-    dy = maxy - miny
+    cell_mass_centre /= (len(cell) - 1)
 
-    return 1.0 - min(dx, dy) / max(dx, dy)
+    mind: float = info.max_edge * 1000
+    maxd: float = 0.0
+
+    for _, to in cell:
+        x = info.planar_layout[to][0]
+        y = info.planar_layout[to][1]
+        dist = segment_len((x, y), cell_mass_centre)
+        mind = min(mind, dist)
+        maxd = max(maxd, dist)
+
+    return 1.0 - (mind / maxd)
 
 
 def planarity_penny(info: GraphInformation) -> float:
@@ -374,56 +395,79 @@ def main(argv: List[str]) -> None:
 
     planar_layout = nx.planar_layout(graph)
     cells = get_planar_graph_cells(graph, nodes, edges, planar_layout)
-    graph_info = GraphInformation(planar_layout, 1, edges)
+    graph_info = GraphInformation(planar_layout, 0.5, 2, edges)
 
     penny = PennyCalculatorVertexMutator(
         [
-            (cell_edge_diff_penny, 3.0),
-            (cell_edge_min_len_penny, 1.0),
-            (cell_diameter_penny, 3.0),
-            (cell_convexity_penny, 7.0),
+            (cell_edge_diff_penny, 2.0),
+            (cell_edge_min_len_penny, 2.0),
+            (cell_edge_max_len_penny, 3.0),
+            (cell_diameter_penny, 2.0),
+            (cell_convexity_penny, 4.0),
         ],
         [
-            (planarity_penny_edge, 1500.0),
+            (planarity_penny_edge, 1000.0),
         ],
         cells,
         graph_info,
     )
 
     nodes_list = list(nodes)
+    iterations = 10
     cnt = 0
-    for _ in range(3):
+
+    for _ in range(iterations):
         shuffle(nodes_list)
         for node in nodes_list:
+            penny.set_current_mutation(node)
+            plt.show()
             cnt += 1
-            initial = np.zeros(shape=(2,))
+            print("\rDone: {:.2f}".format(
+                100 * cnt / (iterations * len(nodes_list))), end=' %')
 
+            prev_node_pos = penny.graph_info.planar_layout[node][:]
+
+            initial = np.zeros(shape=(2,))
             neigs = 0
             for neig in graph.neighbors(node):
                 initial += graph_info.planar_layout[neig]
                 neigs += 1
-
             initial /= neigs
 
-            penny.set_current_mutation(node)
+            nodes_sum = np.zeros(shape=(2,))
+            for v in nodes_list:
+                nodes_sum += penny.graph_info.planar_layout[v]
+            nodes_sum /= len(penny.graph_info.planar_layout)
+
+            from_center_to_cur = (initial - nodes_sum) / 100.0
+            initial += from_center_to_cur
+
+            penny.graph_info.planar_layout[node] = initial
+
             result = minimize(
                 penny,
                 initial,
-                method='Powell',
+                method='Nelder-Mead',
                 tol=1e-6
             )
-            penny.graph_info.planar_layout[node] = result.x
-            print("\rDone: {:.2f}".format(
-                100 * cnt / (3 * len(nodes_list))), end=' %')
+
+            non_planarity: float = 0
+            for neig in graph.neighbors(node):
+                non_planarity += planarity_penny_edge(
+                    node, neig, penny.graph_info)
+            if non_planarity > 0:
+                penny.graph_info.planar_layout[node] = prev_node_pos
+            else:
+                penny.graph_info.planar_layout[node] = result.x
+
+        nx.draw(graph,
+                pos=penny.graph_info.planar_layout,
+                width=1,
+                node_size=5)
+        # plt.savefig('out.svg')
+        plt.show()
 
     print()
-
-    nx.draw(graph,
-            pos=penny.graph_info.planar_layout,
-            width=1,
-            node_size=5)
-    plt.savefig('out.svg')
-    plt.show()
 
 
 if __name__ == '__main__':
