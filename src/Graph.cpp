@@ -51,6 +51,7 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
     }
 
     case graphOutputFormat::WOLFRAM_NOTEBOOK:
+    case graphOutputFormat::TXT_EDGES:
         break;
 
     default:
@@ -75,6 +76,11 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
 
         case graphOutputFormat::WOLFRAM_NOTEBOOK:
             print(os, '{', id_, ", ", nodeTo.getId(), '}', ((last && !nonReservedCount) ? "" : ", "));
+            break;
+
+        case graphOutputFormat::TXT_EDGES:
+            print(os, id_, " ", nodeTo.getId(), '\n');
+            break;
 
         default:
             break;
@@ -100,6 +106,9 @@ void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
         os << "Graph[Rule @@@ {";
         break;
 
+    case graphOutputFormat::TXT_EDGES:
+        break;
+
     default:
         break;
     }
@@ -117,6 +126,9 @@ void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
 
     case graphOutputFormat::WOLFRAM_NOTEBOOK:
         os << "}, GraphLayout -> \"PlanarEmbedding\"]\n";
+        break;
+
+    case graphOutputFormat::TXT_EDGES:
         break;
 
     default:

@@ -18,7 +18,7 @@ struct ConsoleFlags
         cxxopts::Options options("vankamp-vis", "Van Kampen diagram visualisation tool");
         options.add_options()(
             "i,input", "Specify input file", cxxopts::value(inputFileName), "(required)")(
-            "f,format", "Set file format", cxxopts::value(outputFormatString)->default_value("dot"), "(dot, nb)")(
+            "f,format", "Set file format", cxxopts::value(outputFormatString)->default_value("dot"), "(dot, nb, edges)")(
             "o,output", "Specify output filename without exestention", cxxopts::value(outputFileName)->default_value("vankamp-vis-out"), "")(
             "c,cycle-output", "Set boundary cycle output file", cxxopts::value(wordOutputFileName)->default_value("vankamp-vis-cycle.txt"), "")(
             "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
@@ -44,6 +44,7 @@ struct ConsoleFlags
         std::unordered_map<std::string, van_kampen::graphOutputFormat> formatByString = {
             {"dot", van_kampen::graphOutputFormat::DOT},
             {"nb", van_kampen::graphOutputFormat::WOLFRAM_NOTEBOOK},
+            {"edges", van_kampen::graphOutputFormat::TXT_EDGES},
         };
 
         outputFormat = formatByString[outputFormatString];
@@ -62,7 +63,7 @@ struct ConsoleFlags
     bool hasCellsLimit = false;
     bool iterativeAlgo = true;
     bool mergingAlgo = false;
-    std::string outputFormatString = "dot";
+    std::string outputFormatString;
     van_kampen::graphOutputFormat outputFormat;
 };
 
