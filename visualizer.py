@@ -352,9 +352,6 @@ def main(argv: List[str]) -> None:
         description='Van Kampen diagram visualiser')
     parser.add_argument('path', type=str, nargs=1,
                         help='Path of .edges file (can be generated with vankamp-vis)')
-    parser.add_argument('--sum', dest='accumulate', action='store_const',
-                        const=sum, default=max,
-                        help='sum the integers (default: find the max)')
     args = parser.parse_args(argv)
 
     edges = []
