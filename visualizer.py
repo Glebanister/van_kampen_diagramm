@@ -351,13 +351,13 @@ class PennyCalculatorCellMutator:
 
         for penny, coef in self.cell_pennies:
             for cell in self.cells:
-                total += penny(cell, self.graph_info) / len(self.cells)
+                total += penny(cell, self.graph_info) / len(self.cells) * coef
 
         for penny, coef in self.edge_pennies:
             for edge in self.adj_edges:
                 total += penny(edge[0],
                                edge[1],
-                               self.graph_info) / len(self.adj_edges)
+                               self.graph_info) / len(self.adj_edges) * coef
 
         return total
 
@@ -467,7 +467,7 @@ def main(argv: List[str]) -> None:
     for fr, to in edges:
         graph.add_edge(fr, to)
 
-    planar_layout = nx.planar_layout(graph)
+    planar_layout = nx.kamada_kawai_layout(graph)
     cells = get_planar_graph_cells(graph, nodes, edges, planar_layout)
 
     graph_info = GraphInformation(
@@ -509,6 +509,11 @@ def main(argv: List[str]) -> None:
             initial = np.array(penny.graph_info.planar_layout[node])
             penny.graph_info.planar_layout[node] = initial
 
+            prev_non_planarity: float = 0
+            for neig in graph.neighbors(node):
+                prev_non_planarity += planarity_penny_edge(
+                    node, neig, penny.graph_info)
+
             result = minimize(
                 penny,
                 initial,
@@ -520,7 +525,7 @@ def main(argv: List[str]) -> None:
             for neig in graph.neighbors(node):
                 non_planarity += planarity_penny_edge(
                     node, neig, penny.graph_info)
-            if non_planarity > 0:
+            if non_planarity > prev_non_planarity:
                 penny.graph_info.planar_layout[node] = prev_node_pos
             else:
                 penny.graph_info.planar_layout[node] = result.x
