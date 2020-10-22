@@ -5,9 +5,13 @@ project(vankamp-vis
 
 add_compile_options(-Wall -Wextra -Wshadow -Wpedantic)
 
+add_subdirectory(extern/ogdf
+                 build_ogdf)
+
 set(EXE
     ${CMAKE_PROJECT_NAME}
 )
+
 set(SOURCES
     src/main.cpp
     src/Graph.cpp
@@ -20,6 +24,12 @@ add_executable(${EXE} ${SOURCES})
 
 target_include_directories(${EXE} PRIVATE include)
 target_include_directories(${EXE} PRIVATE extern/cxxopts/include)
+target_include_directories(${EXE} PRIVATE extern/ogdf/include)
+
+target_link_libraries(${EXE}
+                      COIN)
+target_link_libraries(${EXE}
+                    OGDF)
 
 set_property(TARGET ${EXE}
              PROPERTY CXX_STANDARD 17)

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Graph.hpp>
+#include "Graph.hpp"
+#include "Geometry.hpp"
 
 namespace van_kampen
 {
@@ -9,25 +10,41 @@ namespace van_kampen
     struct Transition;
     using nodeId_t = int;
 
+    // Group element
     class GroupElement
     {
     public:
+        // Unique identificator of group element
         std::string name = "";
+
+        // Is group element reversed
         bool reversed = false;
 
         bool operator==(const GroupElement &other) const;
+
+        // Returns if this group element opposite to other
         bool isOpposite(const GroupElement &other);
 
+        // Returns reversed version of this group element
         GroupElement inversed() const;
+
+        // Inverse this group element to opposite
         void inverse() noexcept;
     };
 
     using nodeId_t = int;
 
+    // Transition in graph
     struct Transition
     {
+        // Id of following node
         nodeId_t to;
+
+        // Label on corresponding edge
         GroupElement label;
+
+        // Middle point of edge
+        Point edgeMedian;
 
         Transition(nodeId_t to, const GroupElement &elem);
     };

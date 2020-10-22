@@ -1,4 +1,8 @@
+#include <ogdf/basic/GraphAttributes.h>
+#include <ogdf/fileformats/GraphIO.h>
+
 #include "Graph.hpp"
+#include "Utility.hpp"
 
 namespace van_kampen
 {
@@ -33,10 +37,10 @@ void Node::setDiagramComment(const std::string &comment) { comment_ = comment; }
 void Node::setDiagramLabel(std::string &&label) { label_ = std::move(label); }
 void Node::setDiagramComment(std::string &&comment) { comment_ = std::move(comment); }
 const std::deque<Transition> &Node::transitions() const { return transitions_; }
+std::deque<Transition> &Node::transitions() { return transitions_; }
 nodeId_t Node::makeNonexistantNode() noexcept { return -1; }
 bool Node::isNonexistantNode(nodeId_t id) noexcept { return id == -1; }
 
-// Print this node and all outgoing transitions
 void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool last) const
 {
     switch (fmt)
@@ -46,7 +50,7 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
         std::string shape = isHighlighted_ ? "circle" : "point";
         std::string label = !label_.empty() ? ",label=" + label_ : "";
         std::string comment = !comment_.empty() ? ",xlabel=\"" + comment_ + "\"" : "";
-        print(os, id_, "[shape=", shape, label, comment, "];\n");
+        utility::print(os, id_, "[shape=", shape, label, comment, "];\n");
         break;
     }
 
@@ -60,7 +64,7 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
 
     std::size_t nonReservedCount = std::count_if(transitions_.begin(), transitions_.end(), [](const Transition &tr) { return !tr.label.reversed; });
 
-    for (const auto &[nodeToId, transitionLabel] : transitions_)
+    for (const auto &[nodeToId, transitionLabel, coordinate] : transitions_)
     {
         if (transitionLabel.reversed)
         {
@@ -71,15 +75,15 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
         switch (fmt)
         {
         case graphOutputFormat::DOT:
-            print(os, id_, "->", nodeTo.getId(), " [label=\"", transitionLabel.name, "\"];\n");
+            utility::print(os, id_, "->", nodeTo.getId(), " [label=\"", transitionLabel.name, "\"];\n");
             break;
 
         case graphOutputFormat::WOLFRAM_NOTEBOOK:
-            print(os, '{', id_, ", ", nodeTo.getId(), '}', ((last && !nonReservedCount) ? "" : ", "));
+            utility::print(os, '{', id_, ", ", nodeTo.getId(), '}', ((last && !nonReservedCount) ? "" : ", "));
             break;
 
         case graphOutputFormat::TXT_EDGES:
-            print(os, id_, " ", nodeTo.getId(), '\n');
+            utility::print(os, id_, " ", nodeTo.getId(), '\n');
             break;
 
         default:
@@ -135,6 +139,68 @@ void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
         break;
     }
     os.flush();
+}
+
+void Graph::printSelfToSvg(const std::string &filename)
+{
+    ogdf::Graph ogdfGraph;
+    ogdf::GraphAttributes ogdfGraphArrtibutes(ogdfGraph,
+                                              ogdf::GraphAttributes::nodeGraphics |
+                                                  ogdf::GraphAttributes::edgeGraphics |
+                                                  ogdf::GraphAttributes::edgeStyle |
+                                                  ogdf::GraphAttributes::edgeLabel |
+                                                  ogdf::GraphAttributes::edgeArrow |
+                                                  ogdf::GraphAttributes::nodeLabel |
+                                                  ogdf::GraphAttributes::nodeStyle);
+    std::vector<ogdf::node> ogdfNodes;
+    ogdfGraphArrtibutes.directed() = true;
+    ogdf::GraphIO::svgSettings.fontSize(1);
+
+    const double scale = 10.0;
+    const double nodeSize = 0.08;
+    const double strokeWidth = 0.01;
+
+    for (const Node &node : nodes_)
+    {
+        ogdfNodes.push_back(ogdfGraph.newNode(node.id_));
+        ogdfGraphArrtibutes.x(ogdfNodes.back()) = node.position.x * scale;
+        ogdfGraphArrtibutes.y(ogdfNodes.back()) = node.position.y * scale;
+        ogdfGraphArrtibutes.shape(ogdfNodes.back()) = ogdf::Shape::Ellipse;
+        ogdfGraphArrtibutes.width(ogdfNodes.back()) = nodeSize * scale;
+        ogdfGraphArrtibutes.height(ogdfNodes.back()) = nodeSize * scale;
+        if (node.isHighlighted_)
+        {
+            ogdfGraphArrtibutes.shape(ogdfNodes.back()) = ogdf::Shape::Hexagon;
+        }
+        ogdfGraphArrtibutes.label(ogdfNodes.back()) = std::to_string(node.id_);
+        ogdfGraphArrtibutes.strokeWidth(ogdfNodes.back()) = strokeWidth;
+    }
+
+    for (std::size_t i = 0; i < ogdfNodes.size(); ++i)
+    {
+        ogdf::node ogdfNode = ogdfNodes[i];
+        nodeId_t nodeId = nodes_[i].getId();
+        for (const Transition &transition : node(nodeId).transitions())
+        {
+            if (transition.label.reversed)
+            {
+                continue;
+            }
+            ogdf::node ogdfNodeTo = ogdfNodes[transition.to];
+            ogdf::edge edge = ogdfGraph.newEdge(ogdfNode, ogdfNodeTo);
+            ogdf::DPolyline &line = ogdfGraphArrtibutes.bends(edge);
+            line.pushBack(ogdf::DPoint(transition.edgeMedian.x * scale,
+                                       transition.edgeMedian.y * scale));
+            ogdfGraphArrtibutes.strokeWidth(edge) = strokeWidth * scale;
+            ogdfGraphArrtibutes.arrowType(edge) = ogdf::EdgeArrow::First;
+            ogdfGraphArrtibutes.label(edge) = transition.label.name;
+        }
+    }
+
+    if (!ogdf::GraphIO::write(ogdfGraphArrtibutes, filename, ogdf::GraphIO::drawSVG))
+    {
+        throw std::invalid_argument("Can not write graph to '" + filename + "'");
+    }
 }
 
 Node &Graph::node(nodeId_t it)
