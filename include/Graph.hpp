@@ -105,6 +105,13 @@ namespace van_kampen
         // Returns reference on node
         Node &node(nodeId_t it);
 
+        // Merge other to node, now what became dest
+        // Works if graph is not oriented
+        void mergeNodes(nodeId_t dest, nodeId_t what);
+
+        // Removes edges a -> b, b -> a
+        void removeOrientedEdge(nodeId_t, nodeId_t);
+
     private:
         std::deque<Node> nodes_;
     };

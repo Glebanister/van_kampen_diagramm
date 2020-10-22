@@ -45,7 +45,7 @@ std::vector<Transition> Diagramm::getCircuit()
     {
         if (graph_.nodes()[curNodeId].transitions().empty())
         {
-            throw std::invalid_argument("can not read circuit");
+            throw std::invalid_argument("diagram is not looped");
         }
         else
         {
@@ -171,5 +171,15 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
     graph_.node(branchTo).addTransition(curNode, word.back().inversed());
     graph_.node(branchTo).swapLastAdditions();
     return true;
+}
+
+bool Diagramm::merge(Diagramm &&other)
+{
+/*
+
+1. Find longest common substring
+2. 
+
+*/
 }
 } // namespace van_kampen

@@ -54,8 +54,17 @@ namespace van_kampen
     public:
         Diagramm(Graph &graph);
 
+        // Returns vector of main circuit transitions
         std::vector<Transition> getCircuit();
+
+        // Adds word to diagram
+        // Returns if word has been binded
         bool bindWord(const std::vector<GroupElement> &word);
+
+        // Merges other diagramm to this
+        // Returns if merge was successful
+        bool merge(Diagramm &&other);
+
         nodeId_t getTerminal() const noexcept;
         void setTerminal(nodeId_t) noexcept;
 

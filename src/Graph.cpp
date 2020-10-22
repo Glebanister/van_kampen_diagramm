@@ -212,4 +212,47 @@ const std::deque<Node> &Graph::nodes() const
 {
     return nodes_;
 }
+
+void Graph::mergeNodes(nodeId_t alive, nodeId_t dead)
+{
+    for (Transition &edgeFromDead : node(dead).transitions())
+    {
+        for (Transition &edge : node(edgeFromDead.to).transitions())
+        {
+            if (edge.to == dead)
+            {
+                edge.to = alive;
+            }
+        }
+    }
+}
+
+void Graph::removeOrientedEdge(nodeId_t a, nodeId_t b)
+{
+    std::size_t idA = 0, idB = 0;
+    bool edgeFound = false;
+    for (; idA < node(a).transitions().size(); ++idA)
+    {
+        Transition &edge = node(a).transitions()[idA];
+        if (edge.to != b)
+        {
+            continue;
+        }
+        for (; idB < node(b).transitions().size(); ++idB)
+        {
+            if (edge.to != a)
+            {
+                continue;
+            }
+            edgeFound = true;
+        }
+        if (!edgeFound)
+        {
+            throw std::invalid_argument("can not remove non-oriented edge");
+        }
+        break;
+    }
+    node(a).transitions_.erase(node(a).transitions_.begin() + idA);
+    node(b).transitions_.erase(node(b).transitions_.begin() + idB);
+}
 } // namespace van_kampen
