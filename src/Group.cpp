@@ -173,13 +173,14 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
     return true;
 }
 
-bool Diagramm::merge(Diagramm &&other)
+bool Diagramm::merge(Diagramm &&)
 {
-/*
+    /*
 
 1. Find longest common substring
 2. 
 
 */
+    return false;
 }
 } // namespace van_kampen

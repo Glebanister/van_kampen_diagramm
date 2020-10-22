@@ -84,14 +84,14 @@ namespace van_kampen
     }
 
     // Returns distance between two points
-    double distance(const Point &a, const Point &b)
+    inline double distance(const Point &a, const Point &b)
     {
         return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
     }
 
     // Returns distance from seg to pt
     // Original code source: https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
-    double distance(const Segment &seg, const Point pt)
+    inline double distance(const Segment &seg, const Point pt)
     {
         double x = pt.x, y = pt.y;
         double x1 = seg.first.x;
