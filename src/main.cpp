@@ -24,7 +24,7 @@ struct ConsoleFlags
             "n,no-shuffle", "Do not shuffle representation before generation", cxxopts::value(notShuffleGroup)->default_value("false"), "")(
             "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
             "l,limit", "Set cells limit", cxxopts::value(cellsLimit), "integer")(
-            "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo)->default_value("true"))(
+            "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo))(
             "merging", "Build diagramm with merging algorithm", cxxopts::value(mergingAlgo))(
             "h,help", "Print usage");
 
@@ -69,25 +69,19 @@ struct ConsoleFlags
 
 struct DiagrammGeneratingAlgorithm
 {
-    DiagrammGeneratingAlgorithm(van_kampen::Graph &graph)
-        : diagramm_(graph) {}
-
     virtual void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) = 0;
-    virtual van_kampen::Diagramm &diagramm()
-    {
-        return diagramm_;
-    }
-
+    virtual van_kampen::Diagramm &diagramm() = 0;
     virtual ~DiagrammGeneratingAlgorithm() = default;
+    van_kampen::Graph &graph() { return *graph_; }
 
 protected:
-    van_kampen::Diagramm diagramm_;
+    std::shared_ptr<van_kampen::Graph> graph_ = std::make_shared<van_kampen::Graph>();
 };
 
 struct IterativeAlgorithm : DiagrammGeneratingAlgorithm
 {
-    IterativeAlgorithm(van_kampen::Graph &graph)
-        : DiagrammGeneratingAlgorithm(graph) {}
+    IterativeAlgorithm()
+        : diagramm_(graph_) {}
 
     void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) override
     {
@@ -115,19 +109,94 @@ struct IterativeAlgorithm : DiagrammGeneratingAlgorithm
         iterateOverWordsOnce();
     }
 
+    van_kampen::Diagramm &diagramm() override
+    {
+        return diagramm_;
+    }
+
     std::size_t cellsLimit = 0;
     bool quiet = false;
+
+private:
+    van_kampen::Diagramm diagramm_;
 };
 
 struct MergingAlgorithm : DiagrammGeneratingAlgorithm
 {
-    MergingAlgorithm(van_kampen::Graph &graph)
-        : DiagrammGeneratingAlgorithm(graph) {}
+    MergingAlgorithm()
+        : result_(graph_) {}
 
-    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &) override
+    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) override
     {
-        throw std::logic_error("not implemented");
+        std::vector<van_kampen::Diagramm> diagrams;
+        diagrams.reserve(words.size());
+        int left = limit ? limit : words.size();
+        for (auto &word : words)
+        {
+            if (!left--)
+            {
+                // TODO: Implement limitation
+            }
+            diagrams.push_back(van_kampen::Diagramm{graph_});
+            diagrams.back().bindWord(word);
+        }
+        van_kampen::ProcessLogger log{diagrams.size(), std::cout, "Merging", quiet};
+        while (diagrams.size() > 1)
+        {
+            std::vector<std::pair<van_kampen::Diagramm, std::vector<van_kampen::Transition>>> circuits;
+            for (std::size_t i = 0; i < circuits.size(); ++i)
+            {
+                circuits.push_back({diagrams[i], diagrams[i].getCircuit()});
+            }
+            auto compareCircuitPrefix = [circuits](std::size_t first,
+                                                   std::size_t second) {
+                std::size_t i = 0;
+                for (; i < circuits[first].second.size() &&
+                       i < circuits[second].second.size() &&
+                       circuits[first].second[i].label == circuits[second].second[i].label;
+                     ++i)
+                    ;
+                if (i == circuits[first].second.size())
+                {
+                    return true;
+                }
+                if (i == circuits[second].second.size())
+                {
+                    return false;
+                }
+                return circuits[first].second[i].label.name.front() < circuits[second].second[i].label.name.front();
+            };
+            std::vector<std::size_t> order(diagrams.size());
+            std::generate(order.begin(), order.end(), [&, x = 0]() mutable { return x++; });
+            diagrams.clear();
+            std::stable_sort(order.begin(), order.end(), compareCircuitPrefix);
+            for (std::size_t i = 0; i + 1 < circuits.size(); i += 2)
+            {
+                auto &&cur = circuits[order[i]].first;
+                auto &&next = circuits[order[i + 1]].first;
+                if (!cur.merge(std::move(next)))
+                {
+                    diagrams.push_back(std::move(cur));
+                    diagrams.push_back(std::move(next));
+                }
+                else
+                {
+                    log.iterate();
+                    diagrams.push_back(std::move(cur));
+                }
+            }
+        }
+        result_ = diagrams[0];
     }
+
+    van_kampen::Diagramm &diagramm() override
+    {
+        return result_;
+    }
+
+    std::size_t limit = 0;
+    bool quiet = false;
+    van_kampen::Diagramm result_;
 };
 
 int main(int argc, const char **argv)
@@ -149,23 +218,23 @@ int main(int argc, const char **argv)
             std::random_shuffle(words.begin(), words.end());
         }
 
-        van_kampen::Graph graph;
         std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
-
         if (flags.iterativeAlgo && flags.mergingAlgo)
         {
             throw std::invalid_argument("specify one algorithm");
         }
-        if (flags.iterativeAlgo)
+        if (flags.iterativeAlgo || !(flags.iterativeAlgo || flags.mergingAlgo))
         {
-            auto iterative = std::make_unique<IterativeAlgorithm>(graph);
+            auto iterative = std::make_unique<IterativeAlgorithm>();
             iterative->cellsLimit = flags.cellsLimit;
             iterative->quiet = flags.quiet;
             algo.reset(iterative.release());
         }
         else if (flags.mergingAlgo)
         {
-            auto merging = std::make_unique<MergingAlgorithm>(graph);
+            auto merging = std::make_unique<MergingAlgorithm>();
+            merging->limit = flags.cellsLimit;
+            merging->quiet = flags.quiet;
             algo.reset(merging.release());
         }
 
@@ -192,13 +261,13 @@ int main(int argc, const char **argv)
             }
         }
 
-        graph.node(algo->diagramm().getTerminal()).setDiagramLabel("S");
+        algo->graph().node(algo->diagramm().getTerminal()).setDiagramLabel("S");
         std::ofstream outFile(flags.outputFileName);
         if (!outFile.good())
         {
             throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
         }
-        graph.printSelf(outFile, flags.outputFormat);
+        algo->graph().printSelf(outFile, flags.outputFormat);
     }
     catch (const std::exception &e)
     {

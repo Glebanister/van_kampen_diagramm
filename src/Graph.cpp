@@ -217,6 +217,7 @@ void Graph::mergeNodes(nodeId_t alive, nodeId_t dead)
 {
     for (Transition &edgeFromDead : node(dead).transitions())
     {
+        node(alive).addTransition(edgeFromDead.to, edgeFromDead.label);
         for (Transition &edge : node(edgeFromDead.to).transitions())
         {
             if (edge.to == dead)
