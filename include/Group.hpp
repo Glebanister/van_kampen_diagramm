@@ -52,7 +52,7 @@ namespace van_kampen
     class Diagramm
     {
     public:
-        Diagramm(Graph &graph);
+        Diagramm(std::shared_ptr<Graph> graph);
 
         // Returns vector of main circuit transitions
         std::vector<Transition> getCircuit();
@@ -70,6 +70,6 @@ namespace van_kampen
 
     private:
         nodeId_t terminal_ = -1;
-        Graph &graph_;
+        std::shared_ptr<Graph> graph_;
     };
 } // namespace van_kampen

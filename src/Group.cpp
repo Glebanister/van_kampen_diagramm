@@ -27,7 +27,7 @@ void GroupElement::inverse() noexcept
     reversed ^= true;
 }
 
-Diagramm::Diagramm(Graph &graph)
+Diagramm::Diagramm(std::shared_ptr<Graph> graph)
     : graph_(graph) {}
 
 std::vector<Transition> Diagramm::getCircuit()
@@ -39,17 +39,17 @@ std::vector<Transition> Diagramm::getCircuit()
         return {};
     }
 
-    nodeId_t firstNodeId = graph_.nodes()[terminal_].getId();
+    nodeId_t firstNodeId = graph_->nodes()[terminal_].getId();
     nodeId_t curNodeId = firstNodeId;
     do
     {
-        if (graph_.nodes()[curNodeId].transitions().empty())
+        if (graph_->nodes()[curNodeId].transitions().empty())
         {
             throw std::invalid_argument("diagram is not looped");
         }
         else
         {
-            result.push_back(graph_.nodes()[curNodeId].transitions().back());
+            result.push_back(graph_->nodes()[curNodeId].transitions().back());
             curNodeId = result.back().to;
         }
     } while (curNodeId != firstNodeId);
@@ -80,22 +80,22 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
     private:
         Diagramm &diagramm;
         Graph &graph;
-    } shuffler(*this, graph_);
+    } shuffler(*this, *graph_);
 
     std::vector<Transition> circleWord = getCircuit();
     if (circleWord.empty())
     {
-        terminal_ = graph_.addNode();
+        terminal_ = graph_->addNode();
         nodeId_t curNode = terminal_;
         for (std::size_t i = 0; i < word.size() - 1; ++i)
         {
             nodeId_t prevNode = curNode;
-            curNode = graph_.node(prevNode).addTransitionToNewNode(word[i]);
-            graph_.node(curNode).addTransition(prevNode, word[i].inversed());
+            curNode = graph_->node(prevNode).addTransitionToNewNode(word[i]);
+            graph_->node(curNode).addTransition(prevNode, word[i].inversed());
         }
-        graph_.node(curNode).addTransition(terminal_, word.back());
-        graph_.node(terminal_).addTransition(curNode, word.back().inversed());
-        graph_.node(terminal_).swapLastAdditions();
+        graph_->node(curNode).addTransition(terminal_, word.back());
+        graph_->node(terminal_).addTransition(curNode, word.back().inversed());
+        graph_->node(terminal_).swapLastAdditions();
         return true;
     }
 
@@ -164,23 +164,94 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
     for (std::size_t i = longestEntry; i < word.size() - 1; ++i)
     {
         auto prevNode = curNode;
-        curNode = graph_.node(prevNode).addTransitionToNewNode(word[i]);
-        graph_.node(curNode).addTransition(prevNode, word[i].inversed());
+        curNode = graph_->node(prevNode).addTransitionToNewNode(word[i]);
+        graph_->node(curNode).addTransition(prevNode, word[i].inversed());
     }
-    graph_.node(curNode).addTransition(branchTo, word.back());
-    graph_.node(branchTo).addTransition(curNode, word.back().inversed());
-    graph_.node(branchTo).swapLastAdditions();
+    graph_->node(curNode).addTransition(branchTo, word.back());
+    graph_->node(branchTo).addTransition(curNode, word.back().inversed());
+    graph_->node(branchTo).swapLastAdditions();
     return true;
 }
 
-bool Diagramm::merge(Diagramm &&)
+bool Diagramm::merge(Diagramm &&other)
 {
-    /*
+    if (&graph_ != &other.graph_)
+    {
+        throw std::invalid_argument("can not merge diagrams based on different graphs");
+    }
+    auto doubleWord = [](std::vector<Transition> &word) {
+        std::size_t sz = word.size();
+        for (std::size_t i = 0; i < sz; ++i)
+        {
+            word.push_back(word[i]);
+        }
+    };
+    std::vector<Transition> myCirc = getCircuit(),
+                            otherCirc = other.getCircuit();
+    std::reverse(otherCirc.begin(), otherCirc.end());
+    doubleWord(myCirc);
+    doubleWord(otherCirc);
 
-1. Find longest common substring
-2. 
+    std::size_t longestMatch = 0,
+                myLongestMatchBegin = 0,
+                otherLongestMatchBegin = 0;
 
-*/
-    return false;
+    { // Find longest common substring
+        for (std::size_t leng = 1; leng < myCirc.size(); ++leng)
+        {
+            bool found = false;
+            for (std::size_t i = 0; i + leng < myCirc.size(); ++i)
+            {
+                for (std::size_t j = 0; j + leng < otherCirc.size(); ++j)
+                {
+                    bool allMatched = true;
+                    for (std::size_t k = 0; k < leng; ++k)
+                    {
+                        if (!myCirc[i + k].label.isOpposite(otherCirc[j + k].label))
+                        {
+                            allMatched = false;
+                            myLongestMatchBegin = i;
+                            otherLongestMatchBegin = j;
+                            break;
+                        }
+                    }
+                    if (allMatched)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    break;
+                }
+            }
+            if (!found)
+            {
+                longestMatch = leng - 1;
+            }
+        }
+    }
+
+    if (!longestMatch)
+    {
+        return false;
+    }
+
+    nodeId_t myRootNode = myLongestMatchBegin == 0 ? myCirc.back().to : myCirc[myLongestMatchBegin - 1].to;
+    nodeId_t otherRootNode = otherLongestMatchBegin == 0 ? myCirc.back().to : otherCirc[otherLongestMatchBegin - 1].to;
+
+    graph_->mergeNodes(myRootNode, otherRootNode);
+    nodeId_t prevInOtherPath = otherRootNode;
+    for (std::size_t i = 0; i < longestMatch; ++i)
+    {
+        nodeId_t myCur = myCirc[myLongestMatchBegin + i].to,
+                 otherCur = otherCirc[otherLongestMatchBegin + i].to;
+        graph_->removeOrientedEdge(prevInOtherPath, otherCur);
+        prevInOtherPath = otherCur;
+        graph_->mergeNodes(myCur, otherCur);
+    }
+
+    return true;
 }
 } // namespace van_kampen
