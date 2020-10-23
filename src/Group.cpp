@@ -175,9 +175,9 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
 
 bool Diagramm::merge(Diagramm &&other)
 {
-    if (&graph_ != &other.graph_)
+    if (graph_ != other.graph_)
     {
-        throw std::invalid_argument("can not merge diagrams based on different graphs");
+        throw std::invalid_argument("cannot merge diagrams based on different graphs");
     }
     auto doubleWord = [](std::vector<Transition> &word) {
         std::size_t sz = word.size();
@@ -210,13 +210,13 @@ bool Diagramm::merge(Diagramm &&other)
                         if (!myCirc[i + k].label.isOpposite(otherCirc[j + k].label))
                         {
                             allMatched = false;
-                            myLongestMatchBegin = i;
-                            otherLongestMatchBegin = j;
                             break;
                         }
                     }
                     if (allMatched)
                     {
+                        myLongestMatchBegin = i;
+                        otherLongestMatchBegin = j;
                         found = true;
                         break;
                     }
@@ -226,31 +226,50 @@ bool Diagramm::merge(Diagramm &&other)
                     break;
                 }
             }
-            if (!found)
+            if (found)
             {
-                longestMatch = leng - 1;
+                longestMatch = leng;
             }
         }
     }
 
-    if (!longestMatch)
+    if (!longestMatch ||
+        longestMatch >= myCirc.size() / 2 ||
+        longestMatch >= otherCirc.size() / 2)
     {
         return false;
     }
 
     nodeId_t myRootNode = myLongestMatchBegin == 0 ? myCirc.back().to : myCirc[myLongestMatchBegin - 1].to;
-    nodeId_t otherRootNode = otherLongestMatchBegin == 0 ? myCirc.back().to : otherCirc[otherLongestMatchBegin - 1].to;
+    nodeId_t otherRootNode = otherCirc[otherLongestMatchBegin].to;
 
-    graph_->mergeNodes(myRootNode, otherRootNode);
-    nodeId_t prevInOtherPath = otherRootNode;
+    auto pathNeighbours = [&](std::size_t id) {
+        std::unordered_set<nodeId_t> result = {};
+        if (id > 0)
+        {
+            result.insert(otherCirc[otherLongestMatchBegin + id - 1].to);
+        }
+        if (id < longestMatch)
+        {
+            result.insert(otherCirc[otherLongestMatchBegin + id + 1].to);
+        }
+        return result;
+    };
+
+    nodeId_t prevMyPath = myRootNode;
+    auto ng = pathNeighbours(0);
+    graph_->mergeNodes(myRootNode, otherRootNode, ng);
     for (std::size_t i = 0; i < longestMatch; ++i)
     {
         nodeId_t myCur = myCirc[myLongestMatchBegin + i].to,
-                 otherCur = otherCirc[otherLongestMatchBegin + i].to;
-        graph_->removeOrientedEdge(prevInOtherPath, otherCur);
-        prevInOtherPath = otherCur;
-        graph_->mergeNodes(myCur, otherCur);
+                 otherCur = otherCirc[(otherLongestMatchBegin + i + 1) % otherCirc.size()].to;
+        prevMyPath = myCur;
+        ng = pathNeighbours(i + 1);
+        graph_->mergeNodes(myCur, otherCur, ng);
     }
+    graph_->node(prevMyPath).swapLastAdditions();
+
+    terminal_ = myRootNode;
 
     return true;
 }

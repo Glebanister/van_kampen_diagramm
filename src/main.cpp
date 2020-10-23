@@ -144,7 +144,7 @@ struct MergingAlgorithm : DiagrammGeneratingAlgorithm
         while (diagrams.size() > 1)
         {
             std::vector<std::pair<van_kampen::Diagramm, std::vector<van_kampen::Transition>>> circuits;
-            for (std::size_t i = 0; i < circuits.size(); ++i)
+            for (std::size_t i = 0; i < diagrams.size(); ++i)
             {
                 circuits.push_back({diagrams[i], diagrams[i].getCircuit()});
             }
@@ -166,10 +166,11 @@ struct MergingAlgorithm : DiagrammGeneratingAlgorithm
                 }
                 return circuits[first].second[i].label.name.front() < circuits[second].second[i].label.name.front();
             };
-            std::vector<std::size_t> order(diagrams.size());
+            std::vector<std::size_t> order(circuits.size());
             std::generate(order.begin(), order.end(), [&, x = 0]() mutable { return x++; });
             diagrams.clear();
             std::stable_sort(order.begin(), order.end(), compareCircuitPrefix);
+            bool atleastOne = false;
             for (std::size_t i = 0; i + 1 < circuits.size(); i += 2)
             {
                 auto &&cur = circuits[order[i]].first;
@@ -182,8 +183,13 @@ struct MergingAlgorithm : DiagrammGeneratingAlgorithm
                 else
                 {
                     log.iterate();
+                    atleastOne = true;
                     diagrams.push_back(std::move(cur));
                 }
+            }
+            if (!atleastOne)
+            {
+                throw std::logic_error("cannot build diagram");
             }
         }
         result_ = diagrams[0];
@@ -203,6 +209,8 @@ int main(int argc, const char **argv)
 {
     try
     {
+        // int argc_ = 4;
+        // const char *argv_[] = {"./vankamp-vis", "-i", "output/example.rel", "--iterative"};
         ConsoleFlags flags(argc, argv);
         std::ifstream inputFile(flags.inputFileName);
         if (!inputFile.good())
