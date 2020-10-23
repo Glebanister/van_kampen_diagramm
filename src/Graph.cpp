@@ -41,7 +41,7 @@ std::deque<Transition> &Node::transitions() { return transitions_; }
 nodeId_t Node::makeNonexistantNode() noexcept { return -1; }
 bool Node::isNonexistantNode(nodeId_t id) noexcept { return id == -1; }
 
-void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool last) const
+void Node::printSelf(std::ostream &os, graphOutputFormat fmt) const
 {
     switch (fmt)
     {
@@ -61,9 +61,11 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
     default:
         break;
     }
+}
 
+void Node::printTransitions(std::ostream &os, graphOutputFormat fmt, bool last) const
+{
     std::size_t nonReservedCount = std::count_if(transitions_.begin(), transitions_.end(), [](const Transition &tr) { return !tr.label.reversed; });
-
     for (const auto &[nodeToId, transitionLabel, coordinate] : transitions_)
     {
         if (transitionLabel.reversed)
@@ -75,7 +77,7 @@ void Node::printSelfAndTransitions(std::ostream &os, graphOutputFormat fmt, bool
         switch (fmt)
         {
         case graphOutputFormat::DOT:
-            utility::print(os, id_, "->", nodeTo.getId(), " [label=\"", transitionLabel.name, "\"];\n");
+            utility::print(os, id_, "->", nodeTo.getId(), " [fontsize=12, arrowhead=vee, label=\"", transitionLabel.name, "\"];\n");
             break;
 
         case graphOutputFormat::WOLFRAM_NOTEBOOK:
@@ -104,7 +106,8 @@ void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
     {
     case graphOutputFormat::DOT:
         os << "digraph G {\n"
-              "rankdir=LR;\n";
+              "rankdir=LR;\n"
+              "layout=neato;\n";
         break;
     case graphOutputFormat::WOLFRAM_NOTEBOOK:
         os << "Graph[Rule @@@ {";
@@ -119,7 +122,19 @@ void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
 
     for (std::size_t i = 0; i < nodes_.size(); ++i)
     {
-        nodes_[i].printSelfAndTransitions(os, fmt, i == nodes_.size() - 1);
+        if (removedNodes_.find(i) != removedNodes_.end())
+        {
+            continue;
+        }
+        nodes_[i].printSelf(os, fmt);
+    }
+    for (std::size_t i = 0; i < nodes_.size(); ++i)
+    {
+        if (removedNodes_.find(i) != removedNodes_.end())
+        {
+            continue;
+        }
+        nodes_[i].printTransitions(os, fmt, i == nodes_.size() - 1);
     }
 
     switch (fmt)
@@ -213,10 +228,14 @@ const std::deque<Node> &Graph::nodes() const
     return nodes_;
 }
 
-void Graph::mergeNodes(nodeId_t alive, nodeId_t dead)
+void Graph::mergeNodes(nodeId_t alive, nodeId_t dead, const std::unordered_set<nodeId_t> &untouchable)
 {
     for (Transition &edgeFromDead : node(dead).transitions())
     {
+        if (untouchable.count(edgeFromDead.to))
+        {
+            continue;
+        }
         node(alive).addTransition(edgeFromDead.to, edgeFromDead.label);
         for (Transition &edge : node(edgeFromDead.to).transitions())
         {
@@ -226,34 +245,19 @@ void Graph::mergeNodes(nodeId_t alive, nodeId_t dead)
             }
         }
     }
+    removedNodes_.insert(dead);
 }
 
 void Graph::removeOrientedEdge(nodeId_t a, nodeId_t b)
 {
-    std::size_t idA = 0, idB = 0;
-    bool edgeFound = false;
-    for (; idA < node(a).transitions().size(); ++idA)
-    {
-        Transition &edge = node(a).transitions()[idA];
-        if (edge.to != b)
-        {
-            continue;
-        }
-        for (; idB < node(b).transitions().size(); ++idB)
-        {
-            if (edge.to != a)
-            {
-                continue;
-            }
-            edgeFound = true;
-        }
-        if (!edgeFound)
-        {
-            throw std::invalid_argument("can not remove non-oriented edge");
-        }
-        break;
-    }
-    node(a).transitions_.erase(node(a).transitions_.begin() + idA);
-    node(b).transitions_.erase(node(b).transitions_.begin() + idB);
+    auto maybeRemove = [this](nodeId_t x, nodeId_t y) {
+        std::size_t id = 0;
+        for (; id < node(x).transitions().size() && node(x).transitions()[id].to != y; ++id)
+            ;
+        if (id < node(x).transitions().size())
+            node(x).transitions_.erase(node(x).transitions_.begin() + id);
+    };
+    maybeRemove(a, b);
+    maybeRemove(b, a);
 }
 } // namespace van_kampen

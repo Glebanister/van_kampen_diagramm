@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <unordered_set>
 #include <deque>
 
 #include "Group.hpp"
@@ -70,8 +71,10 @@ namespace van_kampen
     private:
         Node(Graph &graph);
 
-        // Print this node and all outgoing transitions
-        void printSelfAndTransitions(std::ostream &os, graphOutputFormat, bool last) const;
+        // Print this node
+        void printSelf(std::ostream &os, graphOutputFormat) const;
+        // Print all outgoing transitions
+        void printTransitions(std::ostream &os, graphOutputFormat, bool last) const;
 
         std::deque<Transition> transitions_; // List of node adjacent nodes
         bool isHighlighted_ = false;         // Is node marked as terminal on diagram
@@ -107,12 +110,14 @@ namespace van_kampen
 
         // Merge other to node, now what became dest
         // Works if graph is not oriented
-        void mergeNodes(nodeId_t dest, nodeId_t what);
+        // untouchable nodes will not be affected
+        void mergeNodes(nodeId_t dest, nodeId_t what, const std::unordered_set<nodeId_t> &untouchable = {});
 
         // Removes edges a -> b, b -> a
         void removeOrientedEdge(nodeId_t, nodeId_t);
 
     private:
         std::deque<Node> nodes_;
+        std::unordered_set<nodeId_t> removedNodes_;
     };
 } // namespace van_kampen
