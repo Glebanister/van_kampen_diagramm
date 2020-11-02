@@ -1,5 +1,6 @@
 #include <cassert>
 #include <random>
+#include <set>
 #include <sstream>
 
 #include "cxxopts.hpp"
@@ -83,21 +84,30 @@ struct IterativeAlgorithm : DiagrammGeneratingAlgorithm
     IterativeAlgorithm()
         : diagramm_(graph_) {}
 
-    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) override
+    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words_) override
     {
+        auto words = words_;
+        std::reverse(words.begin(), words.end());
         std::size_t totalIterations = words.size();
         if (cellsLimit)
         {
             totalIterations = std::min(totalIterations, cellsLimit);
         }
+        std::vector<bool> isAdded(words.size());
+        bool force = false;
         van_kampen::ProcessLogger logger(totalIterations, std::clog, "Relations used", quiet);
-        std::size_t addedWordsCount = 0;
+        diagramm_.bindWord(words.front());
+        isAdded[0] = true;
+        std::reverse(words.begin(), words.end());
+        std::reverse(isAdded.begin(), isAdded.end());
         auto iterateOverWordsOnce = [&]() {
-            for (const auto &word : words)
+            for (std::size_t i = 0; i < words.size(); ++i)
             {
-                if (diagramm_.bindWord(word))
+                if (isAdded[i])
+                    continue;
+                if (diagramm_.bindWord(words[i], force))
                 {
-                    addedWordsCount += 1;
+                    isAdded[i] = true;
                     if (logger.iterate() >= totalIterations)
                     {
                         break;
@@ -106,6 +116,7 @@ struct IterativeAlgorithm : DiagrammGeneratingAlgorithm
             }
         };
         iterateOverWordsOnce();
+        force = true;
         iterateOverWordsOnce();
     }
 
@@ -116,6 +127,101 @@ struct IterativeAlgorithm : DiagrammGeneratingAlgorithm
 
     std::size_t cellsLimit = 0;
     bool quiet = false;
+
+private:
+    van_kampen::Diagramm diagramm_;
+};
+
+struct LargeFirstAlgorithm : DiagrammGeneratingAlgorithm
+{
+    LargeFirstAlgorithm()
+        : diagramm_(graph_) {}
+
+    void generate(const std::vector<std::vector<van_kampen::GroupElement>> &words) override
+    {
+        std::size_t totalIterations = words.size();
+        if (cellsLimit)
+        {
+            totalIterations = std::min(totalIterations, cellsLimit);
+        }
+        van_kampen::ProcessLogger logger(totalIterations, std::clog, "Relations used", quiet);
+
+        std::vector<bool> isAdded(words.size());
+        using iterator = std::vector<std::vector<van_kampen::GroupElement>>::const_iterator;
+        auto added = [&](iterator it) {
+            return isAdded[it - begin(words)];
+        };
+        bool oneAdded = false;
+        bool force = false;
+        auto add = [&](iterator it) {
+            if (added(it))
+            {
+                throw std::logic_error("already added word");
+            }
+            if (diagramm_.bindWord(*it, force))
+            {
+                isAdded[it - begin(words)] = true;
+                oneAdded = true;
+                return true;
+            }
+            return false;
+        };
+        auto smallIt = words.begin();
+        auto bigIt = prev(words.end());
+        auto nextNotAdded = [&](iterator it) {
+            while (isAdded[++it - begin(words)])
+                ;
+            return it;
+        };
+        auto prevNotAdded = [&](iterator it) {
+            while (isAdded[--it - begin(words)])
+                ;
+            return it;
+        };
+        while (true)
+        {
+            int rest = maximalSmallForOneBig;
+            bool infinite = rest == 0;
+            bool success = true;
+            while (!add(bigIt))
+            {
+                if (rest-- == 0 && !infinite)
+                {
+                    success = false;
+                    break;
+                }
+
+                if (add(smallIt) && logger.iterate() >= totalIterations)
+                    return;
+
+                smallIt = nextNotAdded(smallIt);
+            }
+
+            if (success && logger.iterate() >= totalIterations)
+                return;
+
+            bigIt = prevNotAdded(bigIt);
+            if (smallIt >= bigIt)
+            {
+                smallIt = nextNotAdded(begin(words));
+                bigIt = prevNotAdded(words.end());
+                if (!oneAdded)
+                {
+                    force = true;
+                }
+                oneAdded = false;
+            }
+        }
+    }
+
+    van_kampen::Diagramm &diagramm() override
+    {
+        return diagramm_;
+    }
+
+    std::size_t cellsLimit = 0;
+    bool quiet = false;
+    int maximalSmallForOneBig = 10;
 
 private:
     van_kampen::Diagramm diagramm_;
@@ -138,7 +244,7 @@ struct MergingAlgorithm : DiagrammGeneratingAlgorithm
                 // TODO: Implement limitation
             }
             diagrams.push_back(van_kampen::Diagramm{graph_});
-            diagrams.back().bindWord(word);
+            diagrams.back().bindWord(word, false);
         }
         van_kampen::ProcessLogger log{diagrams.size(), std::cout, "Merging", quiet};
         while (diagrams.size() > 1)
@@ -209,8 +315,8 @@ int main(int argc, const char **argv)
 {
     try
     {
-        // int argc_ = 4;
-        // const char *argv_[] = {"./vankamp-vis", "-i", "output/example.rel", "--iterative"};
+        // int argc_ = 7;
+        // const char *argv_[] = {"./vankamp-vis", "-i", "../../LangToGroup/out.txt", "-l", "2000", "-o", "one-2000"};
         ConsoleFlags flags(argc, argv);
         std::ifstream inputFile(flags.inputFileName);
         if (!inputFile.good())
@@ -221,9 +327,15 @@ int main(int argc, const char **argv)
                          std::istreambuf_iterator<char>());
 
         std::vector<std::vector<van_kampen::GroupElement>> words = van_kampen::GroupRepresentationParser::parse(text);
+        std::clog << "Total relations count: " << words.size() << std::endl;
         if (!flags.notShuffleGroup)
         {
-            std::random_shuffle(words.begin(), words.end());
+            // std::random_shuffle(words.begin(), words.end());
+            std::stable_sort(words.begin(),
+                             words.end(),
+                             [](const std::vector<van_kampen::GroupElement> &a, const std::vector<van_kampen::GroupElement> &b) {
+                                 return a.size() < b.size();
+                             });
         }
 
         std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
@@ -270,6 +382,7 @@ int main(int argc, const char **argv)
         }
 
         algo->graph().node(algo->diagramm().getTerminal()).setDiagramLabel("S");
+        algo->graph().node(algo->diagramm().getTerminal()).highlightNode(true);
         std::ofstream outFile(flags.outputFileName);
         if (!outFile.good())
         {
