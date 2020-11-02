@@ -36,18 +36,19 @@ Where `group-representation-path` - path to group representation file in a forma
 [LangToGroup](https://github.com/YaccConstructor/LangToGroup)
 format.
 
-|        Option        | Param                                                              | Argument type |
-|:--------------------:|:-------------------------------------------------------------------|---------------|
-|    `-i, --input`     | Specify input file                                                 | string        |
-|    `-f, --format`    | Set file format `dot` for graphviz, `nb` for wolfram mathematica   | dot/nb        |
-|    `-o, --output`    | Specify custom output file (default:  vankamp-vis-out)             | string        |
-| `-c, --cycle-output` | Set boundary cycle output file (default:    vankamp-vis-cycle.txt) | string        |
-|  `-n, --no-shuffle`  | Do not shuffle representation before generation                    | -             |
-|    `-q, --quiet`     | Do not log status to console                                       | -             |
-|    `-l, --limit`     | Set cells limit                                                    | integer       |
-|    `--iterative`     | Build diagramm with iterative algorithm (default:  true)           | -             |
-|     `--merging`      | Build diagramm with merging algorithm                              | -             |
-|     `-h, --help`     | Print usage                                                        | -             |
+|        Option        | Param                                                                 | Argument type        |
+|:--------------------:|:----------------------------------------------------------------------|----------------------|
+|    `-i, --input`     | Specify input file                                                    | string               |
+|    `-o, --output`    | Specify custom output file (default:  `<input-filename>-diagram.dot`) | string               |
+| `-c, --cycle-output` | Set boundary cycle output file (default:    vankamp-vis-cycle.txt)    | string               |
+|  `-n, --no-shuffle`  | Do not shuffle representation before generation                       | -                    |
+|    `-q, --quiet`     | Do not log status to console                                          | -                    |
+|    `-l, --limit`     | Set cells limit                                                       | non-negative integer |
+|    `--per-large`     | Set the number of small words used to build one big one               | non-negative integer |
+|    `--iterative`     | Build diagramm with iterative algorithm (default:  true)              | -                    |
+|   `--large-first`    | Build diagramm with large-first algorithm                             | -                    |
+|     `--merging`      | Build diagramm with merging algorithm (not recommended)               | -                    |
+|     `-h, --help`     | Print usage                                                           | -                    |
 
 Group representation format example:
 
@@ -64,6 +65,12 @@ any text after representation
 dot -T[format] <your-diagramm-path> -o outfile.[format]
 ```
 
+### Generate svg file
+
+```bash
+./generate-svg.sh <file-with-diagram>
+```
+
 Supported formats list can be found at [graphviz.org](https://graphviz.org/doc/info/output.html)
 
 ## Example
@@ -73,7 +80,7 @@ $ head -c 40 out.txt
 local f, g;
 f := FreeGroup( "f.1", "f.2"
 $ ./vankamp-vis -i out.txt
-$ dot -Tsvg vankamp-vis-out.dot -o out.svg
+$ ./generate-svg.sh vankamp-vis-out.dot
 ```
 
 Will generate Van Kampen diagramm for alphabet group representation in `out.txt` file.

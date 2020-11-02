@@ -13,7 +13,7 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         "not-sort", "Do not sort representation by relation legth before generation", cxxopts::value(notSort)->default_value("false"), "")(
         "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
         "l,limit", "Set limit for used cells (valid for iterative and large-first)", cxxopts::value(cellsLimit), "")(
-        "per-large", "Set limit for small cells used to bind one large (valid for large-first)", cxxopts::value(perLarge), "")(
+        "per-large", "Set the number of small words used to build one big one (valid for large-first)", cxxopts::value(perLarge)->default_value("10"), "")(
         "large-first", "Build diagramm with large-first algorithm", cxxopts::value(largeFirstAlgo)->default_value("true"))(
         "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo))(
         "merging", "Build diagramm with merging algorithm (not recommended)", cxxopts::value(mergingAlgo))(
