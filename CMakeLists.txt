@@ -19,6 +19,7 @@ set(SOURCES
     src/DiagramGeneratingAlgorithm.cpp
     src/IterativeAlgorithm.cpp
     src/LargeFirstAlgorithm.cpp
+    src/MergingAlgorithm.cpp
 )
 
 add_executable(${EXE} ${SOURCES})
