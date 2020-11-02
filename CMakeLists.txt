@@ -15,6 +15,10 @@ set(SOURCES
     src/Group.cpp
     src/GroupRepresentationParser.cpp
     src/VanKampenUtils.cpp
+    src/ConsoleFlags.cpp
+    src/DiagramGeneratingAlgorithm.cpp
+    src/IterativeAlgorithm.cpp
+    src/LargeFirstAlgorithm.cpp
 )
 
 add_executable(${EXE} ${SOURCES})
