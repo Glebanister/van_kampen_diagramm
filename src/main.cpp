@@ -36,7 +36,7 @@ int main(int argc, const char **argv)
         {
             std::clog << "Total relations count: " << words.size() << std::endl;
         }
-        if (!flags.shuffleGroup)
+        if (flags.shuffleGroup)
         {
             std::random_shuffle(words.begin(), words.end());
         }
