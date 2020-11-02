@@ -44,13 +44,13 @@ namespace van_kampen
         Point position;
 
         // Add transition to existing node with label
-        void addTransition(nodeId_t to, const GroupElement &label);
+        void addTransition(nodeId_t to, const GroupElement &label, bool inSquare);
 
         // Swap last two additions order
         void swapLastAdditions();
 
         // Add transition to new node
-        nodeId_t addTransitionToNewNode(const GroupElement &label);
+        nodeId_t addTransitionToNewNode(const GroupElement &label, bool inSquare);
 
         // Set is node highlighted on diagram
         void highlightNode(bool) noexcept;
@@ -96,9 +96,6 @@ namespace van_kampen
 
         // Print graph to ostream in graphOutputFormat
         void printSelf(std::ostream &os, graphOutputFormat);
-
-        // Print graph to ostream in svg format
-        void printSelfToSvg(const std::string &filename);
 
         // Get list of graph nodes
         // Returns const reference on list

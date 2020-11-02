@@ -42,11 +42,7 @@ namespace van_kampen
 
         // Label on corresponding edge
         GroupElement label;
-
-        // Middle point of edge
-        Point edgeMedian;
-
-        Transition(nodeId_t to, const GroupElement &elem);
+        bool isInSquare;
     };
 
     class Diagramm
@@ -59,11 +55,11 @@ namespace van_kampen
 
         // Adds word to diagram
         // Returns if word has been binded
-        bool bindWord(const std::vector<GroupElement> &word);
+        bool bindWord(std::vector<GroupElement> word, bool force);
 
         // Merges other diagramm to this
         // Returns if merge was successful
-        bool merge(Diagramm &&other);
+        bool merge(Diagramm &&other, std::size_t hint = 0);
 
         nodeId_t getTerminal() const noexcept;
         void setTerminal(nodeId_t) noexcept;
