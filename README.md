@@ -1,4 +1,4 @@
-# Van Kampen diagramm generator
+# Van Kampen diagram generator
 
 Tool for generating Van Kampen diagramms.
 
@@ -45,9 +45,9 @@ format.
 |    `-q, --quiet`     | Do not log status to console                                          | -                    |
 |    `-l, --limit`     | Set cells limit                                                       | non-negative integer |
 |    `--per-large`     | Set the number of small words used to build one big one               | non-negative integer |
-|    `--iterative`     | Build diagramm with iterative algorithm (default:  true)              | -                    |
-|   `--large-first`    | Build diagramm with large-first algorithm                             | -                    |
-|     `--merging`      | Build diagramm with merging algorithm (not recommended)               | -                    |
+|    `--iterative`     | Build diagram with iterative algorithm (default:  true)              | -                    |
+|   `--large-first`    | Build diagram with large-first algorithm                             | -                    |
+|     `--merging`      | Build diagram with merging algorithm (not recommended)               | -                    |
 |     `-h, --help`     | Print usage                                                           | -                    |
 
 Group representation format example:
@@ -62,7 +62,7 @@ any text after representation
 ### Generate [format] file
 
 ```bash
-dot -T[format] <your-diagramm-path> -o outfile.[format]
+dot -T[format] <your-diagram-path> -o outfile.[format]
 ```
 
 ### Generate svg file
@@ -83,6 +83,6 @@ $ ./vankamp-vis -i out.txt
 $ ./generate-svg.sh vankamp-vis-out.dot
 ```
 
-Will generate Van Kampen diagramm for alphabet group representation in `out.txt` file.
+Will generate Van Kampen diagram for alphabet group representation in `out.txt` file.
 
 ![example](media/example.jpg)
