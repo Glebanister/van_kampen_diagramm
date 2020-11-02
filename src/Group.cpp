@@ -3,10 +3,6 @@
 
 namespace van_kampen
 {
-
-Transition::Transition(nodeId_t nodeTo, const GroupElement &elem)
-    : to(nodeTo), label(elem) {}
-
 bool GroupElement::operator==(const GroupElement &other) const
 {
     return name == other.name && reversed == other.reversed;
@@ -60,28 +56,9 @@ std::vector<Transition> Diagramm::getCircuit()
 nodeId_t Diagramm::getTerminal() const noexcept { return terminal_; }
 void Diagramm::setTerminal(nodeId_t n) noexcept { terminal_ = n; }
 
-bool Diagramm::bindWord(const std::vector<GroupElement> &word)
+bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
 {
-    class TerminalShuffler
-    {
-    public:
-        TerminalShuffler(Diagramm &dg, Graph &g)
-            : diagramm(dg), graph(g) {}
-
-        ~TerminalShuffler()
-        {
-            if (Node::isNonexistantNode(diagramm.getTerminal()))
-            {
-                return;
-            }
-            diagramm.setTerminal(graph.node(diagramm.getTerminal()).transitions().back().to);
-        }
-
-    private:
-        Diagramm &diagramm;
-        Graph &graph;
-    } shuffler(*this, *graph_);
-
+    bool isSquare = word.size() == 4;
     std::vector<Transition> circleWord = getCircuit();
     if (circleWord.empty())
     {
@@ -90,11 +67,11 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
         for (std::size_t i = 0; i < word.size() - 1; ++i)
         {
             nodeId_t prevNode = curNode;
-            curNode = graph_->node(prevNode).addTransitionToNewNode(word[i]);
-            graph_->node(curNode).addTransition(prevNode, word[i].inversed());
+            curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare);
+            graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare);
         }
-        graph_->node(curNode).addTransition(terminal_, word.back());
-        graph_->node(terminal_).addTransition(curNode, word.back().inversed());
+        graph_->node(curNode).addTransition(terminal_, word.back(), isSquare);
+        graph_->node(terminal_).addTransition(curNode, word.back().inversed(), isSquare);
         graph_->node(terminal_).swapLastAdditions();
         return true;
     }
@@ -109,71 +86,98 @@ bool Diagramm::bindWord(const std::vector<GroupElement> &word)
 
     std::size_t longestEntry = 0;
     std::size_t entryBegin = 0;
+    std::size_t bestRotation = 0;
 
-    { // knuth morris pratt
-        std::vector<std::string> text;
-        auto addToken = [&](const GroupElement &g) {
-            text.emplace_back(g.reversed ? (g.name + "!") : g.name);
-        };
-        for (auto &letter : word)
-        {
-            addToken(letter);
-        }
-        text.emplace_back("\0");
-        for (Transition &letter : reversedCircleWord)
-        {
-            addToken(letter.label);
-        }
-        std::size_t n = text.size();
-        std::vector<int> pi(n);
-        for (std::size_t i = 1; i < n; ++i)
-        {
-            int j = pi[i - 1];
-            for (; j > 0 && text[i] != text[j]; j = pi[j - 1])
-                ;
-            if (text[i] == text[j])
-                ++j;
-            pi[i] = j;
-        }
-        for (std::size_t i = word.size(); i < text.size(); ++i)
-        {
-            if (pi[i] > static_cast<int>(longestEntry) ||
-                ((rand() % 2 == 0) && pi[i] == static_cast<int>(longestEntry)))
+    for (std::size_t rotation = 0; rotation < word.size(); ++rotation)
+    {
+        { // knuth morris pratt
+            std::vector<std::string> text;
+            auto addToken = [&](const GroupElement &g) {
+                text.emplace_back(g.reversed ? (g.name + "!") : g.name);
+            };
+            for (auto &letter : word)
             {
-                longestEntry = pi[i];
-                entryBegin = i - longestEntry - word.size();
+                addToken(letter);
+            }
+            text.emplace_back("\0");
+            for (Transition &letter : reversedCircleWord)
+            {
+                addToken(letter.label);
+            }
+            std::size_t n = text.size();
+            std::vector<int> pi(n);
+            for (std::size_t i = 1; i < n; ++i)
+            {
+                int j = pi[i - 1];
+                for (; j > 0 && text[i] != text[j]; j = pi[j - 1])
+                    ;
+                if (text[i] == text[j])
+                    ++j;
+                pi[i] = j;
+            }
+            for (std::size_t i = word.size() + 1; i < text.size(); ++i)
+            {
+                if (pi[i] > static_cast<int>(longestEntry) && reversedCircleWord[i - word.size() - 1].isInSquare)
+                {
+                    longestEntry = pi[i];
+                    entryBegin = i - longestEntry - word.size();
+                    bestRotation = rotation;
+                }
+            }
+            for (std::size_t i = word.size() + 1; i < text.size(); ++i)
+            {
+                if (pi[i] > static_cast<int>(longestEntry))
+                {
+                    longestEntry = pi[i];
+                    entryBegin = i - longestEntry - word.size();
+                    bestRotation = rotation;
+                }
             }
         }
+        std::rotate(word.begin(), word.begin() + 1, word.end());
     }
+
+    std::rotate(word.begin(), word.begin() + bestRotation, word.end());
 
     if (longestEntry == 0 || // TODO: some are very strict
         longestEntry == circleWord.size() ||
         entryBegin == 0 ||
-        longestEntry == word.size() ||
         entryBegin + longestEntry == circleWord.size())
     {
         return false;
+    }
+
+    if (longestEntry == word.size())
+    {
+        return true;
     }
 
     std::size_t normalWordEntryBegin = circleWord.size() - longestEntry - entryBegin;
     auto branchFrom = circleWord[normalWordEntryBegin - 1].to;
     auto branchTo = circleWord[normalWordEntryBegin + longestEntry - 1].to;
 
+    bool connectWithSquare = circleWord[normalWordEntryBegin - 1].isInSquare;
+
+    if (longestEntry < 2 && !isSquare && !connectWithSquare && !force)
+    {
+        return false;
+    }
+
     auto curNode = branchFrom;
 
     for (std::size_t i = longestEntry; i < word.size() - 1; ++i)
     {
         auto prevNode = curNode;
-        curNode = graph_->node(prevNode).addTransitionToNewNode(word[i]);
-        graph_->node(curNode).addTransition(prevNode, word[i].inversed());
+        curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare);
+        graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare);
     }
-    graph_->node(curNode).addTransition(branchTo, word.back());
-    graph_->node(branchTo).addTransition(curNode, word.back().inversed());
+    graph_->node(curNode).addTransition(branchTo, word.back(), isSquare);
+    graph_->node(branchTo).addTransition(curNode, word.back().inversed(), isSquare);
     graph_->node(branchTo).swapLastAdditions();
     return true;
 }
 
-bool Diagramm::merge(Diagramm &&other)
+bool Diagramm::merge(Diagramm &&other, std::size_t hint)
 {
     if (graph_ != other.graph_)
     {
@@ -196,9 +200,12 @@ bool Diagramm::merge(Diagramm &&other)
                 myLongestMatchBegin = 0,
                 otherLongestMatchBegin = 0;
 
+    bool hasHint = hint != 0;
     { // Find longest common substring
         for (std::size_t leng = 1; leng < myCirc.size(); ++leng)
         {
+            if (hasHint)
+                leng = hint;
             bool found = false;
             for (std::size_t i = 0; i + leng < myCirc.size(); ++i)
             {
@@ -230,6 +237,8 @@ bool Diagramm::merge(Diagramm &&other)
             {
                 longestMatch = leng;
             }
+            if (hasHint)
+                break;
         }
     }
 
