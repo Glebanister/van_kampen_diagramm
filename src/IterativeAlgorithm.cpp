@@ -18,8 +18,7 @@ void IterativeAlgorithm::generate(const std::vector<std::vector<GroupElement>> &
     std::vector<bool> isAdded(words.size());
     bool force = false;
     ProcessLogger logger(totalIterations, std::clog, "Relations used", quiet);
-    std::reverse(words.begin(), words.end());
-    std::reverse(isAdded.begin(), isAdded.end());
+    std::size_t increase = 0;
     auto iterateOverWordsOnce = [&]() {
         for (std::size_t i = 0; i < words.size(); ++i)
         {
@@ -28,6 +27,7 @@ void IterativeAlgorithm::generate(const std::vector<std::vector<GroupElement>> &
             if (diagramm_.bindWord(words[i], force))
             {
                 isAdded[i] = true;
+                increase += 1;
                 if (logger.iterate() >= totalIterations)
                 {
                     break;
@@ -35,9 +35,23 @@ void IterativeAlgorithm::generate(const std::vector<std::vector<GroupElement>> &
             }
         }
     };
-    iterateOverWordsOnce();
+    increase = 1;
+    while (increase)
+    {
+        increase = 0;
+        iterateOverWordsOnce();
+    }
     force = true;
-    iterateOverWordsOnce();
+    increase = 1;
+    while (increase)
+    {
+        increase = 0;
+        iterateOverWordsOnce();
+    }
+    if (logger.getIteration() < totalIterations && !quiet)
+    {
+        std::clog << "can not bind " << totalIterations - logger.getIteration() << " relations, finishing";
+    }
 }
 
 Diagramm &IterativeAlgorithm::diagramm()

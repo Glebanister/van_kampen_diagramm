@@ -39,12 +39,12 @@ void LargeFirstAlgorithm::generate(const std::vector<std::vector<GroupElement>> 
     auto smallIt = words.begin();
     auto bigIt = prev(words.end());
     auto nextNotAdded = [&](iterator it) {
-        while (isAdded[++it - begin(words)])
-            ;
+        while (it < end(words) && isAdded[it - begin(words)])
+            ++it;
         return it;
     };
     auto prevNotAdded = [&](iterator it) {
-        while (isAdded[--it - begin(words)])
+        while (--it >= begin(words) && isAdded[it - begin(words)])
             ;
         return it;
     };
@@ -64,7 +64,7 @@ void LargeFirstAlgorithm::generate(const std::vector<std::vector<GroupElement>> 
             if (add(smallIt) && logger.iterate() >= totalIterations)
                 return;
 
-            smallIt = nextNotAdded(smallIt);
+            smallIt = nextNotAdded(smallIt + 1);
         }
 
         if (success && logger.iterate() >= totalIterations)
@@ -75,8 +75,15 @@ void LargeFirstAlgorithm::generate(const std::vector<std::vector<GroupElement>> 
         {
             smallIt = nextNotAdded(begin(words));
             bigIt = prevNotAdded(words.end());
+
             if (!oneAdded)
             {
+                if (force && !quiet)
+                {
+                    if (!quiet)
+                        std::clog << "can not bind " << totalIterations - logger.getIteration() << " relations, finishing";
+                    return;
+                }
                 force = true;
             }
             oneAdded = false;
