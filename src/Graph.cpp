@@ -97,6 +97,28 @@ nodeId_t Graph::addNode()
     return nodes_.back().getId();
 }
 
+void Graph::increaseDirEdgePriority(nodeId_t from, nodeId_t to, double value)
+{
+    for (Transition &tr : node(from).transitions())
+    {
+        if (tr.to == to)
+        {
+            tr.priority += value;
+            break;
+        }
+    }
+    throw std::invalid_argument("can not increase priority of edge " +
+                                std::to_string(from) + " -> " +
+                                std::to_string(to) +
+                                ": it does not exist");
+}
+
+void Graph::increaseNondirEdgePriority(nodeId_t a, nodeId_t b, double value)
+{
+    increaseDirEdgePriority(a, b, value);
+    increaseDirEdgePriority(b, a, value);
+}
+
 void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
 {
     switch (fmt)

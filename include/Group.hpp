@@ -43,6 +43,7 @@ namespace van_kampen
         // Label on corresponding edge
         GroupElement label;
         bool isInSquare;
+        double priority = 0.0;
     };
 
     class Diagramm

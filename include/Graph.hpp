@@ -44,13 +44,16 @@ namespace van_kampen
         Point position;
 
         // Add transition to existing node with label
-        void addTransition(nodeId_t to, const GroupElement &label, bool inSquare);
+        void addTransition(nodeId_t to,
+                           const GroupElement &label,
+                           bool inSquare);
 
         // Swap last two additions order
         void swapLastAdditions();
 
         // Add transition to new node
-        nodeId_t addTransitionToNewNode(const GroupElement &label, bool inSquare);
+        nodeId_t addTransitionToNewNode(const GroupElement &label,
+                                        bool inSquare);
 
         // Set is node highlighted on diagram
         void highlightNode(bool) noexcept;
@@ -112,6 +115,12 @@ namespace van_kampen
 
         // Removes edges a -> b, b -> a
         void removeOrientedEdge(nodeId_t, nodeId_t);
+
+        // Increase priority of directed edge from->to by double value
+        void increaseDirEdgePriority(nodeId_t from, nodeId_t to, double);
+
+        // Increase priority of nondirected edge from->to by double value
+        void increaseNondirEdgePriority(nodeId_t, nodeId_t, double);
 
     private:
         std::deque<Node> nodes_;

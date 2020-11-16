@@ -59,6 +59,7 @@ void Diagramm::setTerminal(nodeId_t n) noexcept { terminal_ = n; }
 bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
 {
     bool isSquare = word.size() == 4;
+    double transitionsPriority = 1.0 / static_cast<double>(word.size());
     std::vector<Transition> circleWord = getCircuit();
     if (circleWord.empty())
     {
