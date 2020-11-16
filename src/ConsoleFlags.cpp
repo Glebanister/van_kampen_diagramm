@@ -17,6 +17,7 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         "large-first", "Build diagramm with large-first algorithm", cxxopts::value(largeFirstAlgo)->default_value("true"))(
         "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo))(
         "merging", "Build diagramm with merging algorithm (not recommended)", cxxopts::value(mergingAlgo))(
+        "s,split", "Split diagram in smaller components", cxxopts::value(split)->default_value("true"))(
         "h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
@@ -31,17 +32,6 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         throw cxxopts::option_required_exception("input");
     }
     hasCellsLimit = result.count("limit");
-
-    // std::unordered_map<std::string, van_kampen::graphOutputFormat> formatByString = {
-    //     {"dot", van_kampen::graphOutputFormat::DOT},
-    //     {"nb", van_kampen::graphOutputFormat::WOLFRAM_NOTEBOOK},
-    //     {"edges", van_kampen::graphOutputFormat::TXT_EDGES},
-    // };
-    // outputFormat = formatByString[outputFormatString];
-    // if (!static_cast<int>(outputFormat))
-    // {
-    //     throw std::invalid_argument("Undefined format: " + outputFormatString);
-    // }
 
     if (outputFileName.empty())
     {

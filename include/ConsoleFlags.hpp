@@ -23,6 +23,7 @@ namespace van_kampen
         bool mergingAlgo = false;
         bool largeFirstAlgo = false;
         bool notSort = false;
+        bool split = true;
         std::string outputFormatString;
         van_kampen::graphOutputFormat outputFormat = van_kampen::graphOutputFormat::DOT;
     };

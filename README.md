@@ -45,9 +45,10 @@ format.
 |    `-q, --quiet`     | Do not log status to console                                          | -                    |
 |    `-l, --limit`     | Set cells limit                                                       | non-negative integer |
 |    `--per-large`     | Set the number of small words used to build one big one               | non-negative integer |
-|    `--iterative`     | Build diagram with iterative algorithm (default:  true)              | -                    |
-|   `--large-first`    | Build diagram with large-first algorithm                             | -                    |
-|     `--merging`      | Build diagram with merging algorithm (not recommended)               | -                    |
+|    `--iterative`     | Build diagram with iterative algorithm (default:  true)               | -                    |
+|   `--large-first`    | Build diagram with large-first algorithm                              | -                    |
+|     `--merging`      | Build diagram with merging algorithm (not recommended)                | -                    |
+|    `-s, --split`     | Split diagram in smaller components (default: true)                   | -                    |
 |     `-h, --help`     | Print usage                                                           | -                    |
 
 Group representation format example:
