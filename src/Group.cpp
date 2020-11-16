@@ -59,7 +59,7 @@ void Diagramm::setTerminal(nodeId_t n) noexcept { terminal_ = n; }
 bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
 {
     bool isSquare = word.size() == 4;
-    double transitionsPriority = 1.0 / static_cast<double>(word.size());
+    double transitionPriority = 1.0 / static_cast<double>(word.size());
     std::vector<Transition> circleWord = getCircuit();
     if (circleWord.empty())
     {
@@ -70,10 +70,12 @@ bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
             nodeId_t prevNode = curNode;
             curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare);
             graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare);
+            graph_->increaseNondirEdgePriority(prevNode, curNode, transitionPriority);
         }
         graph_->node(curNode).addTransition(terminal_, word.back(), isSquare);
         graph_->node(terminal_).addTransition(curNode, word.back().inversed(), isSquare);
         graph_->node(terminal_).swapLastAdditions();
+        graph_->increaseNondirEdgePriority(curNode, terminal_, transitionPriority);
         return true;
     }
 
@@ -154,8 +156,8 @@ bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
     }
 
     std::size_t normalWordEntryBegin = circleWord.size() - longestEntry - entryBegin;
-    auto branchFrom = circleWord[normalWordEntryBegin - 1].to;
-    auto branchTo = circleWord[normalWordEntryBegin + longestEntry - 1].to;
+    nodeId_t branchFrom = circleWord[normalWordEntryBegin - 1].to;
+    nodeId_t branchTo = circleWord[normalWordEntryBegin + longestEntry - 1].to;
 
     bool connectWithSquare = circleWord[normalWordEntryBegin - 1].isInSquare;
 
@@ -171,10 +173,18 @@ bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
         auto prevNode = curNode;
         curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare);
         graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare);
+        graph_->increaseNondirEdgePriority(curNode, prevNode, transitionPriority);
     }
     graph_->node(curNode).addTransition(branchTo, word.back(), isSquare);
     graph_->node(branchTo).addTransition(curNode, word.back().inversed(), isSquare);
     graph_->node(branchTo).swapLastAdditions();
+    graph_->increaseNondirEdgePriority(curNode, branchTo, transitionPriority);
+
+    for (std::size_t i = normalWordEntryBegin - 1; i < normalWordEntryBegin + longestEntry - 1; ++i)
+    {
+        graph_->increaseNondirEdgePriority(circleWord[i].to, circleWord[i + 1].to, transitionPriority);
+    }
+
     return true;
 }
 

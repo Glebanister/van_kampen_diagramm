@@ -44,10 +44,10 @@ void Node::printSelf(std::ostream &os, graphOutputFormat fmt) const
     {
     case graphOutputFormat::DOT:
     {
-        std::string shape = isHighlighted_ ? "circle" : "point";
+        std::string shape = std::string{"shape="} + (isHighlighted_ ? "circle" : "point");
         std::string label = !label_.empty() ? ",label=" + label_ : "";
         std::string comment = !comment_.empty() ? ",xlabel=\"" + comment_ + "\"" : "";
-        utility::print(os, id_, "[shape=", shape, label, comment, "];\n");
+        utility::print(os, id_, "[", shape, label, comment, "];\n");
         break;
     }
 
@@ -63,9 +63,9 @@ void Node::printSelf(std::ostream &os, graphOutputFormat fmt) const
 void Node::printTransitions(std::ostream &os, graphOutputFormat fmt, bool last) const
 {
     std::size_t nonReservedCount = std::count_if(transitions_.begin(), transitions_.end(), [](const Transition &tr) { return !tr.label.reversed; });
-    for (const auto &[nodeToId, transitionLabel, _] : transitions_)
+    for (const auto &[nodeToId, transitionLabel, _, weight] : transitions_)
     {
-        if (transitionLabel.reversed)
+        if (weight < 0.01 || transitionLabel.reversed)
         {
             continue;
         }
@@ -74,7 +74,8 @@ void Node::printTransitions(std::ostream &os, graphOutputFormat fmt, bool last) 
         switch (fmt)
         {
         case graphOutputFormat::DOT:
-            utility::print(os, id_, "->", nodeTo.getId(), " [fontsize=12, arrowhead=vee, label=\"", transitionLabel.name, "\"];\n");
+            utility::print(os, id_, "->", nodeTo.getId(),
+                           " [fontsize=12, arrowhead=vee, label=\"", transitionLabel.name, "\", penwidth=", 1.0, "];\n");
             break;
 
         case graphOutputFormat::WOLFRAM_NOTEBOOK:
@@ -104,7 +105,7 @@ void Graph::increaseDirEdgePriority(nodeId_t from, nodeId_t to, double value)
         if (tr.to == to)
         {
             tr.priority += value;
-            break;
+            return;
         }
     }
     throw std::invalid_argument("can not increase priority of edge " +
