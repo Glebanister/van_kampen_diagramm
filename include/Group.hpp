@@ -44,6 +44,7 @@ namespace van_kampen
         GroupElement label;
         bool isInSquare;
         double priority = 0.0;
+        bool isInHub = false;
     };
 
     class Diagramm
@@ -56,7 +57,7 @@ namespace van_kampen
 
         // Adds word to diagram
         // Returns if word has been binded
-        bool bindWord(std::vector<GroupElement> word, bool force);
+        bool bindWord(std::vector<GroupElement> word, bool force, bool hub);
 
         // Merges other diagramm to this
         // Returns if merge was successful

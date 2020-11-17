@@ -6,15 +6,15 @@ namespace van_kampen
 Node::Node(Graph &g)
     : graph_(g), id_(g.nodes().size()) {}
 
-void Node::addTransition(nodeId_t to, const GroupElement &label, bool inSquare)
+void Node::addTransition(nodeId_t to, const GroupElement &label, bool inSquare, bool isHub)
 {
-    transitions_.push_back(Transition{to, label, inSquare});
+    transitions_.push_back(Transition{to, label, inSquare, 0.0, isHub});
 }
 
-nodeId_t Node::addTransitionToNewNode(const GroupElement &label, bool inSquare)
+nodeId_t Node::addTransitionToNewNode(const GroupElement &label, bool inSquare, bool isHub)
 {
     nodeId_t node = graph_.addNode();
-    addTransition(node, label, inSquare);
+    addTransition(node, label, inSquare, isHub);
     return node;
 }
 
@@ -63,7 +63,7 @@ void Node::printSelf(std::ostream &os, graphOutputFormat fmt) const
 void Node::printTransitions(std::ostream &os, graphOutputFormat fmt, bool last) const
 {
     std::size_t nonReservedCount = std::count_if(transitions_.begin(), transitions_.end(), [](const Transition &tr) { return !tr.label.reversed; });
-    for (const auto &[nodeToId, transitionLabel, _, weight] : transitions_)
+    for (const auto &[nodeToId, transitionLabel, _, weight, inHub] : transitions_)
     {
         if (weight < 0.01 || transitionLabel.reversed)
         {
@@ -75,7 +75,7 @@ void Node::printTransitions(std::ostream &os, graphOutputFormat fmt, bool last) 
         {
         case graphOutputFormat::DOT:
             utility::print(os, id_, "->", nodeTo.getId(),
-                           " [fontsize=12, arrowhead=vee, label=\"", transitionLabel.name, "\", penwidth=", 1.0, "];\n");
+                           " [fontsize=12, arrowhead=vee, label=\"", transitionLabel.name, "\", penwidth=", inHub ? 5 : 1, "];\n");
             break;
 
         case graphOutputFormat::WOLFRAM_NOTEBOOK:
@@ -194,7 +194,7 @@ void Graph::mergeNodes(nodeId_t alive, nodeId_t dead, const std::unordered_set<n
         {
             continue;
         }
-        node(alive).addTransition(edgeFromDead.to, edgeFromDead.label, false); // TODO
+        node(alive).addTransition(edgeFromDead.to, edgeFromDead.label, false, false); // TODO
         for (Transition &edge : node(edgeFromDead.to).transitions())
         {
             if (edge.to == dead)

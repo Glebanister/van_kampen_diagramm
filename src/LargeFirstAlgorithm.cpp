@@ -21,14 +21,17 @@ void LargeFirstAlgorithm::generate(const std::vector<std::vector<GroupElement>> 
     auto added = [&](iterator it) {
         return isAdded[it - begin(words)];
     };
+    diagramm_.bindWord(words.back(), false, true);
+    isAdded.back() = true;
+    logger.iterate();
     bool oneAdded = false;
     bool force = false;
     auto add = [&](iterator it) {
         if (added(it))
         {
-            throw std::logic_error("already added word");
+            throw std::logic_error("trying to add already added word");
         }
-        if (diagramm_.bindWord(*it, force))
+        if (diagramm_.bindWord(*it, force, false))
         {
             isAdded[it - begin(words)] = true;
             oneAdded = true;
@@ -37,7 +40,7 @@ void LargeFirstAlgorithm::generate(const std::vector<std::vector<GroupElement>> 
         return false;
     };
     auto smallIt = words.begin();
-    auto bigIt = prev(words.end());
+    auto bigIt = prev(prev(words.end()));
     auto nextNotAdded = [&](iterator it) {
         while (it < end(words) && isAdded[it - begin(words)])
             ++it;

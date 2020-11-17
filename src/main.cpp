@@ -32,10 +32,13 @@ int main(int argc, const char **argv)
                          std::istreambuf_iterator<char>());
 
         std::vector<std::vector<van_kampen::GroupElement>> words = van_kampen::GroupRepresentationParser::parse(text);
+        auto hub = words.back();
         if (!flags.quiet)
         {
             std::clog << "Total relations count: " << words.size() << std::endl;
+            std::clog << "Hub size: " << hub.size() << std::endl;
         }
+        words.pop_back();
         if (flags.shuffleGroup)
         {
             std::random_shuffle(words.begin(), words.end());
@@ -48,6 +51,7 @@ int main(int argc, const char **argv)
                                  return a.size() < b.size();
                              });
         }
+        words.push_back(hub);
 
         std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
         if (flags.iterativeAlgo)

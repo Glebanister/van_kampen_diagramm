@@ -19,6 +19,9 @@ void IterativeAlgorithm::generate(const std::vector<std::vector<GroupElement>> &
     bool isAdditionForced = false;
     ProcessLogger logger(totalIterations, std::clog, "Relations used", quiet);
     std::size_t increase = 0;
+    isAdded.front() = true;
+    diagramm_.bindWord(words.front(), false, true);
+    logger.iterate();
     auto iterateOverWordsOnce = [&]() {
         for (std::size_t i = 0; i < words.size(); ++i)
         {
@@ -28,7 +31,7 @@ void IterativeAlgorithm::generate(const std::vector<std::vector<GroupElement>> &
             }
             if (isAdded[i])
                 continue;
-            if (diagramm_.bindWord(words[i], isAdditionForced))
+            if (diagramm_.bindWord(words[i], isAdditionForced, false))
             {
                 isAdded[i] = true;
                 increase += 1;

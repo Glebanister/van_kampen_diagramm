@@ -56,7 +56,7 @@ std::vector<Transition> Diagramm::getCircuit()
 nodeId_t Diagramm::getTerminal() const noexcept { return terminal_; }
 void Diagramm::setTerminal(nodeId_t n) noexcept { terminal_ = n; }
 
-bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
+bool Diagramm::bindWord(std::vector<GroupElement> word, bool force, bool hub)
 {
     bool isSquare = word.size() == 4;
     double transitionPriority = 1.0 / static_cast<double>(word.size());
@@ -68,12 +68,12 @@ bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
         for (std::size_t i = 0; i < word.size() - 1; ++i)
         {
             nodeId_t prevNode = curNode;
-            curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare);
-            graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare);
+            curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare, hub);
+            graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare, hub);
             graph_->increaseNondirEdgePriority(prevNode, curNode, transitionPriority);
         }
-        graph_->node(curNode).addTransition(terminal_, word.back(), isSquare);
-        graph_->node(terminal_).addTransition(curNode, word.back().inversed(), isSquare);
+        graph_->node(curNode).addTransition(terminal_, word.back(), isSquare, hub);
+        graph_->node(terminal_).addTransition(curNode, word.back().inversed(), isSquare, hub);
         graph_->node(terminal_).swapLastAdditions();
         graph_->increaseNondirEdgePriority(curNode, terminal_, transitionPriority);
         return true;
@@ -171,12 +171,12 @@ bool Diagramm::bindWord(std::vector<GroupElement> word, bool force)
     for (std::size_t i = longestEntry; i < word.size() - 1; ++i)
     {
         auto prevNode = curNode;
-        curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare);
-        graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare);
+        curNode = graph_->node(prevNode).addTransitionToNewNode(word[i], isSquare, hub);
+        graph_->node(curNode).addTransition(prevNode, word[i].inversed(), isSquare, hub);
         graph_->increaseNondirEdgePriority(curNode, prevNode, transitionPriority);
     }
-    graph_->node(curNode).addTransition(branchTo, word.back(), isSquare);
-    graph_->node(branchTo).addTransition(curNode, word.back().inversed(), isSquare);
+    graph_->node(curNode).addTransition(branchTo, word.back(), isSquare, hub);
+    graph_->node(branchTo).addTransition(curNode, word.back().inversed(), isSquare, hub);
     graph_->node(branchTo).swapLastAdditions();
     graph_->increaseNondirEdgePriority(curNode, branchTo, transitionPriority);
 

@@ -18,7 +18,7 @@ void MergingAlgorithm::generate(const std::vector<std::vector<van_kampen::GroupE
             // TODO: Implement limitation
         }
         diagrams.push_back(van_kampen::Diagramm{graph_});
-        diagrams.back().bindWord(word, false);
+        diagrams.back().bindWord(word, false, false);
     }
     van_kampen::ProcessLogger log{diagrams.size(), std::cout, "Merging", quiet};
     while (diagrams.size() > 1)

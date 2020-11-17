@@ -46,14 +46,16 @@ namespace van_kampen
         // Add transition to existing node with label
         void addTransition(nodeId_t to,
                            const GroupElement &label,
-                           bool inSquare);
+                           bool isInSquare,
+                           bool isInHub);
 
         // Swap last two additions order
         void swapLastAdditions();
 
         // Add transition to new node
         nodeId_t addTransitionToNewNode(const GroupElement &label,
-                                        bool inSquare);
+                                        bool isInSquare,
+                                        bool isInHub);
 
         // Set is node highlighted on diagram
         void highlightNode(bool) noexcept;
