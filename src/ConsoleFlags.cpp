@@ -14,8 +14,8 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         "q,quiet", "Do not log status to console", cxxopts::value(quiet)->default_value("false"), "")(
         "l,limit", "Set limit for used cells (valid for iterative and large-first)", cxxopts::value(cellsLimit), "")(
         "per-large", "Set the number of small words used to build one big one (valid for large-first)", cxxopts::value(perLarge)->default_value("10"), "")(
-        "large-first", "Build diagramm with large-first algorithm", cxxopts::value(largeFirstAlgo)->default_value("true"))(
-        "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo))(
+        "large-first", "Build diagramm with large-first algorithm", cxxopts::value(largeFirstAlgo))(
+        "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo)->default_value("true"))(
         "merging", "Build diagramm with merging algorithm (not recommended)", cxxopts::value(mergingAlgo))(
         "s,split", "Split diagram in smaller components", cxxopts::value(split)->default_value("true"))(
         "h,help", "Print usage");
