@@ -48,7 +48,7 @@ format.
 |    `--iterative`     | Build diagram with iterative algorithm (default:  true)               | -                    |
 |   `--large-first`    | Build diagram with large-first algorithm                              | -                    |
 |     `--merging`      | Build diagram with merging algorithm (not recommended)                | -                    |
-|    `-s, --split`     | Split diagram in smaller components (default: true)                   | -                    |
+|    `-s, --split`     | Split diagram in smaller components (default: false)                  | -                    |
 |     `-h, --help`     | Print usage                                                           | -                    |
 
 Group representation format example:
