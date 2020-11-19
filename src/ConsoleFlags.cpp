@@ -17,7 +17,7 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         "large-first", "Build diagramm with large-first algorithm", cxxopts::value(largeFirstAlgo))(
         "iterative", "Build diagramm with iterative algorithm", cxxopts::value(iterativeAlgo)->default_value("true"))(
         "merging", "Build diagramm with merging algorithm (not recommended)", cxxopts::value(mergingAlgo))(
-        "s,split", "Split diagram in smaller components", cxxopts::value(split)->default_value("true"))(
+        "s,split", "Split diagram in smaller components", cxxopts::value(split)->default_value("false"))(
         "h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
@@ -32,6 +32,8 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         throw cxxopts::option_required_exception("input");
     }
     hasCellsLimit = result.count("limit");
+
+    outputFileNameWoEx = inputFileName + "-diagram";
 
     if (outputFileName.empty())
     {

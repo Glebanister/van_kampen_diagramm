@@ -25,6 +25,7 @@ namespace van_kampen
         bool notSort = false;
         bool split = true;
         std::string outputFormatString;
+        std::string outputFileNameWoEx;
         van_kampen::graphOutputFormat outputFormat = van_kampen::graphOutputFormat::DOT;
     };
 } // namespace van_kampen
