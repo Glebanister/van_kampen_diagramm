@@ -49,6 +49,8 @@ namespace van_kampen
                            bool isInSquare,
                            bool isInHub);
 
+        void addTransition(Transition &&);
+
         // Swap last two additions order
         void swapLastAdditions();
 
@@ -100,7 +102,7 @@ namespace van_kampen
         nodeId_t addNode();
 
         // Print graph to ostream in graphOutputFormat
-        void printSelf(std::ostream &os, graphOutputFormat);
+        void printSelf(std::ostream &os, graphOutputFormat) const;
 
         // Get list of graph nodes
         // Returns const reference on list
@@ -109,6 +111,7 @@ namespace van_kampen
         // Get graph node by id
         // Returns reference on node
         Node &node(nodeId_t it);
+        const Node &node(nodeId_t) const;
 
         // Merge other to node, now what became dest
         // Works if graph is not oriented

@@ -11,6 +11,11 @@ void Node::addTransition(nodeId_t to, const GroupElement &label, bool inSquare, 
     transitions_.push_back(Transition{to, label, inSquare, 0.0, isHub});
 }
 
+void Node::addTransition(Transition &&tr)
+{
+    transitions_.push_back(std::move(tr));
+}
+
 nodeId_t Node::addTransitionToNewNode(const GroupElement &label, bool inSquare, bool isHub)
 {
     nodeId_t node = graph_.addNode();
@@ -65,12 +70,12 @@ void Node::printTransitions(std::ostream &os, graphOutputFormat fmt, bool last) 
     std::size_t nonReservedCount = std::count_if(transitions_.begin(), transitions_.end(), [](const Transition &tr) { return !tr.label.reversed; });
     for (const auto &[nodeToId, transitionLabel, _, weight, inHub] : transitions_)
     {
-        if (weight < 0.01 || transitionLabel.reversed)
+        if (transitionLabel.reversed)
         {
             continue;
         }
         --nonReservedCount;
-        const Node &nodeTo = graph_.nodes().at(nodeToId);
+        const Node &nodeTo = graph_.node(nodeToId);
         switch (fmt)
         {
         case graphOutputFormat::DOT:
@@ -120,7 +125,7 @@ void Graph::increaseNondirEdgePriority(nodeId_t a, nodeId_t b, double value)
     increaseDirEdgePriority(b, a, value);
 }
 
-void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
+void Graph::printSelf(std::ostream &os, graphOutputFormat fmt) const
 {
     switch (fmt)
     {
@@ -179,6 +184,11 @@ void Graph::printSelf(std::ostream &os, graphOutputFormat fmt)
 Node &Graph::node(nodeId_t it)
 {
     return nodes_.at(it);
+}
+
+const Node &Graph::node(nodeId_t id) const
+{
+    return nodes_.at(id);
 }
 
 const std::deque<Node> &Graph::nodes() const
