@@ -20,6 +20,7 @@ set(SOURCES
     src/IterativeAlgorithm.cpp
     src/LargeFirstAlgorithm.cpp
     src/MergingAlgorithm.cpp
+    src/GraphSplitter.cpp
 )
 
 add_executable(${EXE} ${SOURCES})
