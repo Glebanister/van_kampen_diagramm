@@ -1,4 +1,5 @@
 #include <cassert>
+#include <filesystem>
 #include <random>
 #include <set>
 #include <sstream>
@@ -7,6 +8,7 @@
 
 #include "ConsoleFlags.hpp"
 #include "Graph.hpp"
+#include "GraphSplitter.hpp"
 #include "Group.hpp"
 #include "GroupRepresentationParser.hpp"
 #include "IterativeAlgorithm.hpp"
@@ -20,8 +22,6 @@ int main(int argc, const char **argv)
 
     try
     {
-        // int argc_ = 5;
-        // const char *argv_[] = {"./vankamp-vis", "-i", "../../LangToGroup/out.txt", "-l", "10"};
         van_kampen::ConsoleFlags flags(argc, argv);
         std::ifstream inputFile(flags.inputFileName);
         if (!inputFile.good())
@@ -100,14 +100,31 @@ int main(int argc, const char **argv)
             }
         }
 
-        algo->graph().node(algo->diagramm().getTerminal()).setDiagramLabel("S");
-        algo->graph().node(algo->diagramm().getTerminal()).highlightNode(true);
-        std::ofstream outFile(flags.outputFileName);
-        if (!outFile.good())
+        if (!flags.split)
         {
-            throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
+            std::ofstream outFile(flags.outputFileName);
+            if (!outFile.good())
+            {
+                throw std::invalid_argument("cannot write to file '" + flags.outputFileName + "'");
+            }
+            algo->graph().printSelf(outFile, flags.outputFormat);
         }
-        algo->graph().printSelf(outFile, flags.outputFormat);
+        else
+        {
+            std::deque<van_kampen::Graph> comps = splitToStrongComponents(algo->graph(), [](const Transition &tr) {
+                return tr.priority >= 0.01;
+            });
+            std::filesystem::create_directory(flags.outputFileNameWoEx);
+            std::size_t compId = 1;
+            for (const van_kampen::Graph &comp : comps)
+            {
+                if (comp.nodes().size() < 2)
+                    continue;
+                std::ofstream outFile(std::filesystem::path(flags.outputFileNameWoEx) / (std::to_string(compId) + ".dot"));
+                comp.printSelf(outFile, flags.outputFormat);
+                ++compId;
+            }
+        }
     }
     catch (const std::exception &e)
     {
