@@ -81,7 +81,22 @@ $ head -c 40 out.txt
 local f, g;
 f := FreeGroup( "f.1", "f.2"
 $ ./vankamp-vis -i out.txt
-$ ./generate-svg.sh vankamp-vis-out.dot
+$ dot -Tsvg -O vankamp-vis-out.dot
+```
+
+Or by using `-s` flag to make it easier for graphviz
+
+```bash
+$ ./build/vankamp-vis -i diagrams/one/det/one-det -s -l 100
+Total relations count: 7637
+Hub size: 300
+Relations used: 100%
+$ ./generate-svg.sh diagrams/one/det/one-det-diagram/
+$ ls diagrams/one/det/one-det-diagram/svg/
+10.dot.svg
+12.dot.svg
+14.dot.svg
+...
 ```
 
 Will generate Van Kampen diagram for alphabet group representation in `out.txt` file.
