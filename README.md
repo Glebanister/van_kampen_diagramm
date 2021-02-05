@@ -36,20 +36,21 @@ Where `group-representation-path` - path to group representation file in a forma
 [LangToGroup](https://github.com/YaccConstructor/LangToGroup)
 format.
 
-|        Option        | Param                                                                 | Argument type        |
-|:--------------------:|:----------------------------------------------------------------------|----------------------|
-|    `-i, --input`     | Specify input file                                                    | string               |
-|    `-o, --output`    | Specify custom output file (default:  `<input-filename>-diagram.dot`) | string               |
-| `-c, --cycle-output` | Set boundary cycle output file (default:    vankamp-vis-cycle.txt)    | string               |
-|  `-n, --no-shuffle`  | Do not shuffle representation before generation                       | -                    |
-|    `-q, --quiet`     | Do not log status to console                                          | -                    |
-|    `-l, --limit`     | Set cells limit                                                       | non-negative integer |
-|    `--per-large`     | Set the number of small words used to build one big one               | non-negative integer |
-|    `--iterative`     | Build diagram with iterative algorithm (default:  true)               | -                    |
-|   `--large-first`    | Build diagram with large-first algorithm                              | -                    |
-|     `--merging`      | Build diagram with merging algorithm (not recommended)                | -                    |
-|    `-s, --split`     | Split diagram in smaller components (default: false)                  | -                    |
-|     `-h, --help`     | Print usage                                                           | -                    |
+|        Option        | Param                                                                      | Argument type         |
+|:--------------------:|:---------------------------------------------------------------------------|-----------------------|
+|    `-i, --input`     | Specify input file                                                         | string                |
+|    `-o, --output`    | Specify custom output file (default:  `<input-filename>-diagram.<format>`) | string                |
+|    `-f, --format`    | Specify output format (default:  `.dot`)                                   | string (`dot, edges`) |
+| `-c, --cycle-output` | Set boundary cycle output file (default:    vankamp-vis-cycle.txt)         | string                |
+|  `-n, --no-shuffle`  | Do not shuffle representation before generation                            | -                     |
+|    `-q, --quiet`     | Do not log status to console                                               | -                     |
+|    `-l, --limit`     | Set cells limit                                                            | non-negative integer  |
+|    `--per-large`     | Set the number of small words used to build one big one                    | non-negative integer  |
+|    `--iterative`     | Build diagram with iterative algorithm (default:  true)                    | -                     |
+|   `--large-first`    | Build diagram with large-first algorithm                                   | -                     |
+|     `--merging`      | Build diagram with merging algorithm (not recommended)                     | -                     |
+|    `-s, --split`     | Split diagram in smaller components (default: false)                       | -                     |
+|     `-h, --help`     | Print usage                                                                | -                     |
 
 Group representation format example:
 
