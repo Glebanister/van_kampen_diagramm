@@ -7,7 +7,8 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
     cxxopts::Options options("vankamp-vis", "Van Kampen diagram visualisation tool");
     options.add_options()(
         "i,input", "Specify input file", cxxopts::value(inputFileName), "(required)")(
-        "o,output", "Specify output filename, '<input-filename>-diagram.dot' by default", cxxopts::value(outputFileName), "")(
+        "f,format", "Output format", cxxopts::value(outputFormatString), "dot/edges")(
+        "o,output", "Specify output filename, '<input-filename>-diagram.<format>' by default", cxxopts::value(outputFileName), "")(
         "c,circuit-output", "Set boundary circuit output file, '<input-filename>-circuit.txt' by default", cxxopts::value(wordOutputFileName), "")(
         "shuffle", "Shuffle representation before generation", cxxopts::value(shuffleGroup)->default_value("false"), "")(
         "not-sort", "Do not sort representation by relation legth before generation", cxxopts::value(notSort)->default_value("false"), "")(
@@ -21,6 +22,22 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
         "h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
+
+    if (outputFormatString == "dot")
+    {
+        outputFormat = graphOutputFormat::DOT;
+    }
+    else if (outputFormatString == "edges")
+    {
+        outputFormat = graphOutputFormat::TXT_EDGES;
+    }
+    else
+    {
+        throw cxxopts::invalid_option_format_error("Format can be either dot or edges");
+    }
+
+    std::cout << outputFormatString << std::endl;
+
 
     if (result.count("help"))
     {
@@ -37,7 +54,7 @@ ConsoleFlags::ConsoleFlags(int argc, const char **argv)
 
     if (outputFileName.empty())
     {
-        outputFileName = inputFileName + "-diagram.dot";
+        outputFileName = inputFileName + "-diagram." + outputFormatString;
     }
     if (wordOutputFileName.empty())
     {

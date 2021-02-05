@@ -1,20 +1,13 @@
-#include <cassert>
 #include <filesystem>
-#include <random>
-#include <set>
-#include <sstream>
 
 #include "cxxopts.hpp"
 
 #include "ConsoleFlags.hpp"
-#include "Graph.hpp"
 #include "GraphSplitter.hpp"
-#include "Group.hpp"
 #include "GroupRepresentationParser.hpp"
 #include "IterativeAlgorithm.hpp"
 #include "LargeFirstAlgorithm.hpp"
 #include "MergingAlgorithm.hpp"
-#include "VanKampenUtils.hpp"
 
 int main(int argc, const char **argv)
 {
@@ -52,7 +45,6 @@ int main(int argc, const char **argv)
                              });
         }
         words.push_back(hub);
-
         std::unique_ptr<DiagrammGeneratingAlgorithm> algo;
         if (flags.iterativeAlgo)
         {
@@ -100,6 +92,7 @@ int main(int argc, const char **argv)
             }
         }
 
+
         if (!flags.split)
         {
             std::ofstream outFile(flags.outputFileName);
@@ -120,7 +113,7 @@ int main(int argc, const char **argv)
             {
                 if (comp.nodes().size() < 2)
                     continue;
-                std::ofstream outFile(std::filesystem::path(flags.outputFileNameWoEx) / (std::to_string(compId) + ".dot"));
+                std::ofstream outFile(std::filesystem::path(flags.outputFileNameWoEx) / (std::to_string(compId) + "." + flags.outputFormatString));
                 comp.printSelf(outFile, flags.outputFormat);
                 ++compId;
             }

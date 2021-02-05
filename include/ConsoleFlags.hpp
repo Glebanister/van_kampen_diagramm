@@ -24,8 +24,8 @@ namespace van_kampen
         bool largeFirstAlgo = false;
         bool notSort = false;
         bool split = true;
-        std::string outputFormatString;
         std::string outputFileNameWoEx;
         van_kampen::graphOutputFormat outputFormat = van_kampen::graphOutputFormat::DOT;
+        std::string outputFormatString = "edges";
     };
 } // namespace van_kampen
