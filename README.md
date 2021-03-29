@@ -21,7 +21,7 @@ git clone https://github.com/Glebanister/van_kampen_diagramm --recursive
 
 ```bash
 mkdir build && cd build
-make
+cmake .. && make
 ```
 
 ### Generate .dot file
